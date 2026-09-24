@@ -1,21 +1,69 @@
+<div align="center">
+
 # AppSec Scanner
 
-A local portfolio project that distinguishes confirmed vulnerabilities from
-indicators requiring manual review. Python, requests, BeautifulSoup, optional
-Playwright, SQLite and a read-only Flask dashboard. Built incrementally through
-v0.1–v0.4; see [verification results](docs/verification.md) for commands and observed results.
+### Investigate findings. Verify the evidence.
 
-[Architecture](docs/architecture.md) · [Data contract](docs/data-contract.md) ·
-[Dashboard](docs/dashboard.md) · [Actual fixture sample](examples/sample-fixture-dast.json)
+A local application security toolkit for web scanning, access-control checks,
+source analysis, and a read-only results dashboard.
 
-![Read-only dashboard displaying labeled fixture records](docs/assets/dashboard-fixture.png)
+[![Scanner checks](https://github.com/can-yazicioglu/appsec-scanner/actions/workflows/ci.yml/badge.svg)](https://github.com/can-yazicioglu/appsec-scanner/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](pyproject.toml)
+[![Version](https://img.shields.io/badge/version-0.4.0-0d9488)](https://github.com/can-yazicioglu/appsec-scanner/tree/v0.4.0)
+[![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+[Quick start](#quick-start) · [Capabilities](#capabilities) · [Documentation](#documentation) · [Contributing](CONTRIBUTING.md)
+
+</div>
+
+![Read-only dashboard displaying labeled synthetic fixture records](docs/assets/dashboard-fixture.png)
+
+<p align="center"><em>Dashboard preview using synthetic fixture records. Scans run from the CLI.</em></p>
+
+## Why this project?
+
+Security findings need context. AppSec Scanner keeps **severity** and **confidence**
+separate, distinguishing verified behavior from indicators that need manual review.
+It brings bounded testing, minimized evidence, SQLite history, and JSON exports
+into one local workflow.
+
+Built with Python, Requests, BeautifulSoup, optional Playwright, SQLite, and Flask.
+A portfolio and learning project with explicitly documented coverage.
+
+## Capabilities
+
+| Area | What it does | Evidence standard |
+| --- | --- | --- |
+| Web discovery | Static links/forms, SPA traffic, explicit endpoints | Exact hostname allowlist and bounded requests |
+| XSS | Reflection checks and supported GET query execution in Chromium | Expected probe alert required for confirmation |
+| SQL injection | Repeated baseline, boolean, and control comparisons | Stable differential behavior; errors alone stay suspected |
+| IDOR | Explicit JSON resources across two verified accounts | Matching resource identity and protected content required |
+| Source analysis | Python/JavaScript SQL construction, eval, secret-like literals | Suspected findings; source is never executed |
+| Dashboard | Stored scans, findings, filters, JSON exports | Local, read-only SQLite access |
 
 ## Quick start
 
+Requires **Python 3.11+**. Try a local source fixture first; no Docker or browser required.
+
 ```sh
+git clone https://github.com/can-yazicioglu/appsec-scanner.git
+cd appsec-scanner
 python3 -m venv .venv
 . .venv/bin/activate
-pip install -e '.[dev,browser]'
+python -m pip install -e .
+appsec source-scan tests/fixtures/source --output results/source-fixture.json
+appsec dashboard
+```
+
+Open **http://127.0.0.1:5000**. On Windows PowerShell, activate with
+`.venv\Scripts\Activate.ps1`.
+
+### Web scanning with a local Juice Shop lab
+
+Requires Docker Compose and the optional browser dependencies:
+
+```sh
+python -m pip install -e '.[dev,browser]'
 python -m playwright install --with-deps chromium
 docker compose up -d juice-shop
 appsec scan --config examples/juice-shop.json --output results/juice-shop.json
@@ -23,6 +71,9 @@ appsec scans
 appsec export SCAN_ID --output results/export.json
 appsec dashboard
 ```
+
+Replace `SCAN_ID` with an ID from `appsec scans`. Docker builds and live
+Juice Shop/DVWA runs remain unverified in the [verification record](docs/verification.md).
 
 Only scan systems you own or have approval to test. Every run requires an
 explicit exact hostname allowlist. Subdomains are not implicitly approved.
@@ -149,7 +200,11 @@ errors and reached limits produce failed/partial status. UTF-8 source only.
 
 ## Reproduce the portfolio demo
 
+Install the browser extras first if you used only the source-scanning quick start.
+
 ```sh
+python -m pip install -e '.[dev,browser]'
+python -m playwright install --with-deps chromium
 python -m examples.generate_samples
 appsec --db results/fixture-demo.db dashboard
 ```
@@ -165,7 +220,7 @@ finding, and six suspected SAST findings. They are **not Juice Shop/DVWA results
 
 ```sh
 pytest -q
-ruff check appsec tests
+ruff check appsec tests examples
 docker compose --profile tools run --rm scanner
 docker compose --profile tools up -d dashboard
 ```
@@ -178,3 +233,24 @@ CLI runs use `results/appsec.db` instead. Container export:
 Controlled test fixtures are deliberately vulnerable and bind loopback only.
 Target findings are never inferred from fixture results. PortSwigger support is
 a future direction beyond v0.4.
+
+## Documentation
+
+| Guide | Contents |
+| --- | --- |
+| [Architecture](docs/architecture.md) | Scope, transport, budgets, and scan pipeline |
+| [Data contract](docs/data-contract.md) | Finding schema, confidence, storage, export |
+| [Dashboard](docs/dashboard.md) | Views, filters, local operation |
+| [Target setup](docs/targets.md) | Juice Shop and DVWA setup and coverage gaps |
+| [Verification record](docs/verification.md) | Observed checks and remaining limitations |
+
+## Contributing
+
+Bug reports, documentation improvements, and focused pull requests are welcome.
+See [CONTRIBUTING.md](CONTRIBUTING.md). For vulnerabilities in the scanner itself,
+see [SECURITY.md](SECURITY.md).
+
+## License
+
+[MIT License](LICENSE) · Copyright © 2026 Can Yazicioglu.
+Third-party dependencies and lab targets retain their own licenses.

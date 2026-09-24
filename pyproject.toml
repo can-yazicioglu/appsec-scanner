@@ -7,7 +7,16 @@ name = "appsec-scanner"
 version = "0.4.0"
 description = "A local, evidence-driven AppSec scanner and read-only dashboard"
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+readme = "README.md"
+keywords = ["appsec", "security", "dast", "sast", "scanner"]
 dependencies = ["requests>=2.32.4,<3", "beautifulsoup4>=4.13,<5", "Flask>=3.1,<4"]
+
+[project.urls]
+Repository = "https://github.com/can-yazicioglu/appsec-scanner"
+Documentation = "https://github.com/can-yazicioglu/appsec-scanner#readme"
+Issues = "https://github.com/can-yazicioglu/appsec-scanner/issues"
 
 [project.optional-dependencies]
 browser = ["playwright>=1.51,<2"]
