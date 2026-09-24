@@ -1,4 +1,5 @@
 """Authoritative schema and stable, JSON-native read interface."""
+
 import json
 import sqlite3
 import uuid
@@ -31,18 +32,24 @@ JSON_FIELDS = {"errors", "limitations", "owasp", "reproduction_steps", "location
 
 
 class Repository:
-    def __init__(self, path, redactor=None):
-        if str(path) != ":memory:":
+    def __init__(self, path, redactor=None, *, read_only=False):
+        if not read_only and str(path) != ":memory:":
             Path(path).parent.mkdir(parents=True, exist_ok=True)
         self.redactor = redactor or Redactor()
-        self.db = sqlite3.connect(str(path), timeout=10)
+        address = Path(path).resolve().as_uri() + "?mode=ro" if read_only else str(path)
+        self.db = sqlite3.connect(address, timeout=10, uri=read_only)
         self.db.row_factory = sqlite3.Row
         self.db.execute("PRAGMA foreign_keys=ON")
         version = self.db.execute("PRAGMA user_version").fetchone()[0]
+        if read_only:
+            self.db.execute("PRAGMA query_only=ON")
+            if version != 1:
+                self.close()
+                raise ValueError("Read-only access requires the current schema")
         if version > 1:
             self.close()
             raise ValueError("Database schema is newer than this application")
-        if version == 0:
+        if version == 0 and not read_only:
             self.db.executescript("BEGIN;" + SCHEMA + "COMMIT;")
 
     def __enter__(self):
@@ -58,7 +65,9 @@ class Repository:
     def _decode(row):
         if row is None:
             return None
-        return {k: json.loads(v) if k in JSON_FIELDS else v for k, v in dict(row).items() if k != "fingerprint"}
+        return {
+            k: json.loads(v) if k in JSON_FIELDS else v for k, v in dict(row).items() if k != "fingerprint"
+        }
 
     def start_scan(self, scope, scan_type):
         if scan_type not in ("DAST", "SAST"):
@@ -66,17 +75,26 @@ class Repository:
         scope = self.redactor.url(scope) if scan_type == "DAST" else self.redactor.text(scope)
         sid = str(uuid.uuid4())
         with self.db:
-            self.db.execute("INSERT INTO scans VALUES (?,?,?,?,NULL,'running','[]','[]')",
-                            (sid, scope, scan_type, utcnow()))
+            self.db.execute(
+                "INSERT INTO scans VALUES (?,?,?,?,NULL,'running','[]','[]')",
+                (sid, scope, scan_type, utcnow()),
+            )
         return sid
 
     def finish_scan(self, scan_id, status, *, errors=None, limitations=None):
         if status not in STATUSES[1:]:
             raise ValueError("Invalid terminal scan status")
         with self.db:
-            cursor = self.db.execute("UPDATE scans SET status=?, finished_at=?, errors=?, limitations=? WHERE id=?",
-                                    (status, utcnow(), json.dumps(self.redactor.clean(errors or [])),
-                                     json.dumps(self.redactor.clean(limitations or [])), scan_id))
+            cursor = self.db.execute(
+                "UPDATE scans SET status=?, finished_at=?, errors=?, limitations=? WHERE id=?",
+                (
+                    status,
+                    utcnow(),
+                    json.dumps(self.redactor.clean(errors or [])),
+                    json.dumps(self.redactor.clean(limitations or [])),
+                    scan_id,
+                ),
+            )
             if not cursor.rowcount:
                 raise ValueError("Unknown scan")
 
@@ -88,17 +106,35 @@ class Repository:
         data = self.redactor.clean(data)
         data["scan_id"] = scan_id
         data["fingerprint"] = identity
-        old = self.db.execute("SELECT * FROM findings WHERE scan_id=? AND fingerprint=?",
-                              (scan_id, identity)).fetchone()
+        old = self.db.execute(
+            "SELECT * FROM findings WHERE scan_id=? AND fingerprint=?", (scan_id, identity)
+        ).fetchone()
         if old:
             if old["confidence"] == "confirmed" and data["confidence"] == "suspected":
                 return old["id"]
             data["id"], data["created_at"] = old["id"], old["created_at"]
-        columns = ["id", "scan_id", "fingerprint", "check_id", "title", "severity", "confidence", "owasp",
-                   "description", "remediation", "reproduction_steps", "location", "evidence", "created_at"]
+        columns = [
+            "id",
+            "scan_id",
+            "fingerprint",
+            "check_id",
+            "title",
+            "severity",
+            "confidence",
+            "owasp",
+            "description",
+            "remediation",
+            "reproduction_steps",
+            "location",
+            "evidence",
+            "created_at",
+        ]
         values = [json.dumps(data[k], ensure_ascii=False) if k in JSON_FIELDS else data[k] for k in columns]
         with self.db:
-            self.db.execute(f"INSERT OR REPLACE INTO findings ({','.join(columns)}) VALUES ({','.join('?' for _ in columns)})", values)
+            self.db.execute(
+                f"INSERT OR REPLACE INTO findings ({','.join(columns)}) VALUES ({','.join('?' for _ in columns)})",
+                values,
+            )
         return data["id"]
 
     def get_scan(self, scan_id):
@@ -117,9 +153,13 @@ class Repository:
                 clauses.append(key + "=?")
                 args.append(value)
         where = " WHERE " + " AND ".join(clauses) if clauses else ""
-        return [self._decode(r) for r in self.db.execute(
-            "SELECT * FROM scans" + where + " ORDER BY started_at DESC,id DESC LIMIT ? OFFSET ?",
-            [*args, limit, offset])]
+        return [
+            self._decode(r)
+            for r in self.db.execute(
+                "SELECT * FROM scans" + where + " ORDER BY started_at DESC,id DESC LIMIT ? OFFSET ?",
+                [*args, limit, offset],
+            )
+        ]
 
     def get_finding(self, finding_id):
         return self._decode(self.db.execute("SELECT * FROM findings WHERE id=?", (finding_id,)).fetchone())
@@ -135,5 +175,10 @@ class Repository:
                 clauses.append(key + "=?")
                 args.append(value)
         order = "CASE severity " + " ".join(f"WHEN '{s}' THEN {i}" for i, s in enumerate(SEVERITIES)) + " END"
-        return [self._decode(r) for r in self.db.execute(
-            "SELECT * FROM findings WHERE " + " AND ".join(clauses) + f" ORDER BY {order},created_at,id", args)]
+        return [
+            self._decode(r)
+            for r in self.db.execute(
+                "SELECT * FROM findings WHERE " + " AND ".join(clauses) + f" ORDER BY {order},created_at,id",
+                args,
+            )
+        ]

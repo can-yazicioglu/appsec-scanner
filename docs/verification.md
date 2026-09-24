@@ -33,6 +33,25 @@ References:
 * [Juice Shop v19.2.1 login](https://github.com/juice-shop/juice-shop/blob/v19.2.1/routes/login.ts)
 * [Playwright network routing](https://playwright.dev/python/docs/network)
 
-Git scaffold commit created; first GitHub push failed because HTTPS Git
-credentials were absent. Milestone commits will be pushed when authentication
-is available. No history rewriting.
+Git scaffold commit created; initial HTTPS push failed because credentials were
+absent. Existing SSH authentication subsequently succeeded: main and v0.1.0 were
+pushed to `can-yazicioglu/appsec-scanner`. No history rewriting.
+
+## v0.2 checkpoint — 2026-09-24
+
+Form/JSON login, CSRF field fetching, environment substitution, cookie/bearer
+alternatives and identity verification passed against the live fixture.
+Authenticated Chromium observed the exact XSS probe. Separate approved origins
+did not receive credentials. Login and verification URLs are scope-checked
+before issuing requests. POST form and JSON reflection stays suspected.
+
+CL delivered the read-only Flask dashboard, all four shared export filters and
+`docs/dashboard.md`. CL component run: **64 passed**. Desktop (1440×1100) and
+mobile (390×844) Chromium checks covered all three views, filter interaction,
+download selection, hostile evidence escaping and document overflow; a mobile
+overflow issue was fixed and rechecked. `docs/assets/dashboard-fixture.png` is
+a UI preview using clearly marked synthetic dashboard records, not target results.
+
+Juice Shop v19.2.1 `routes/currentUser.ts` was inspected; whoami reads the token
+cookie, so the example sets `token_cookie` as well as bearer/local storage.
+Automated authentication against Docker Juice Shop remains unverified here.

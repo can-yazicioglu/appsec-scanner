@@ -1,0 +1,82 @@
+{#- Evidence is untrusted scanner output: every value is autoescaped text, never
+    markup, and scanned URLs are never turned into links or embedded resources. -#}
+
+{% macro severity_badge(severity) -%}
+  <span class="severity severity-{{ severity }}">{{ severity|capitalize }}</span>
+{%- endmacro %}
+
+{% macro confidence_badge(confidence) -%}
+  {%- if confidence == "confirmed" -%}
+    <span class="confidence confidence-confirmed" title="Verified by the recorded method">Confirmed</span>
+  {%- else -%}
+    <span class="confidence confidence-suspected" title="Not verified; requires manual review">Suspected · needs review</span>
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro status_badge(status) -%}
+  <span class="status status-{{ status }}">{{ {"completed": "Completed", "partial": "Partial", "failed": "Failed", "running": "Not finished"}.get(status, status) }}</span>
+{%- endmacro %}
+
+{% macro location_summary(location) -%}
+  {%- if location.kind == "SAST" -%}
+    <span class="kind">SAST</span> <code class="path">{{ location.file_path }}:{{ location.line }}</code>
+    <span class="subtle">rule <code>{{ location.pattern_id }}</code></span>
+  {%- else -%}
+    <span class="kind">{{ location.method }}</span> <code class="url">{{ location.url }}</code>
+    {%- if location.parameter %}
+      <span class="subtle">parameter <code>{{ location.parameter }}</code>{% if location.input_location %} in {{ location.input_location }}{% endif %}</span>
+    {%- endif -%}
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro scan_status_notice(scan) -%}
+  {%- if scan.status == "failed" -%}
+    <div class="notice notice-danger" role="alert">
+      <strong>Scan failed — results are incomplete.</strong>
+      Findings below cover only what ran before the failure. An absence of findings is not evidence that the target is secure.
+    </div>
+  {%- elif scan.status == "partial" -%}
+    <div class="notice notice-warning" role="alert">
+      <strong>Partial scan.</strong>
+      Some checks or verification steps did not complete. An absence of findings is not evidence that the target is secure.
+    </div>
+  {%- elif scan.status == "running" -%}
+    <div class="notice notice-info" role="status">
+      <strong>Scan not finished.</strong>
+      It is still running or was interrupted before it recorded a final status. Results are incomplete.
+    </div>
+  {%- endif -%}
+  {%- if scan.errors or scan.limitations %}
+    <div class="scan-notes">
+      {%- if scan.errors %}
+        <h3>Errors</h3>
+        <ul>{% for error in scan.errors %}<li>{{ error|redactions }}</li>{% endfor %}</ul>
+      {%- endif %}
+      {%- if scan.limitations %}
+        <h3>Limitations</h3>
+        <ul>{% for limitation in scan.limitations %}<li>{{ limitation|redactions }}</li>{% endfor %}</ul>
+      {%- endif %}
+    </div>
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro facts_table(facts, skip=()) -%}
+  <table class="facts">
+    <tbody>
+    {%- for key, value in facts.items() if key not in skip %}
+      <tr>
+        <th scope="row">{{ key|replace("_", " ") }}</th>
+        <td>
+          {%- if value is none %}<span class="subtle">null</span>
+          {%- elif value is number or value is boolean or (value is string and "\n" not in value and value|length <= 120) %}<code>{{ value|redactions }}</code>
+          {%- elif value is string %}<pre class="evidence">{{ value|redactions }}</pre>
+          {%- else %}
+            <details class="structured"><summary>{{ value|length }} {{ "entry" if value|length == 1 else "entries" }}</summary>
+              <pre class="evidence">{{ value|redactions }}</pre></details>
+          {%- endif -%}
+        </td>
+      </tr>
+    {%- endfor %}
+    </tbody>
+  </table>
+{%- endmacro %}

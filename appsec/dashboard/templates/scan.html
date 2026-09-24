@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_macros.html" import severity_badge, confidence_badge, status_badge, location_summary, scan_status_notice %}
+{% block title %}Scan {{ scan.id|short_id }}{% endblock %}
+{% block content %}
+<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="{{ url_for('dashboard.scans') }}">Scan workspace</a><span>/</span><span>{{ scan.id|short_id }}</span></nav>
+<section class="page-heading scan-heading"><div><p class="eyebrow">{{ scan.scan_type }} INVESTIGATION {{ status_badge(scan.status) }}</p><h1 class="scope-heading">{{ scan.scope }}</h1><p class="lede mono">{{ scan.id }} <span class="header-divider">/</span> {{ scan.started_at|timestamp }}</p></div><a class="button primary" href="{{ url_for('dashboard.export', scan_id=scan.id, **query) }}" data-download>↓ Export {% if filters.values()|select|list %}filtered {% endif %}JSON</a></section>
+{{ scan_status_notice(scan) }}
+<section class="metrics metrics-four" aria-label="Whole scan totals">
+  <div class="metric"><span class="tiny-label">TOTAL FINDINGS</span><strong>{{ total }}</strong><span class="subtle">Across the whole scan</span></div>
+  <div class="metric"><span class="tiny-label">CONFIRMED</span><strong class="confirmed-number">{{ confirmed_count }}</strong><span class="subtle">Verified by recorded evidence</span></div>
+  <div class="metric"><span class="tiny-label">SUSPECTED</span><strong class="suspected-number">{{ total - confirmed_count }}</strong><span class="subtle">Requires manual review</span></div>
+  <div class="metric"><span class="tiny-label">FINISHED</span><strong class="metric-date">{{ scan.finished_at|timestamp }}</strong><span class="subtle">{% if scan.finished_at %}Recorded completion time{% else %}No final state recorded{% endif %}</span></div>
+</section>
+<section class="panel">
+  <div class="panel-heading"><div><span class="eyebrow">TRIAGE</span><h2>Findings <span class="count-pill">{{ findings|length }}</span></h2></div><span class="subtle">{{ findings|length }} of {{ total }} findings shown</span></div>
+  <form method="get" class="findings-filters" aria-label="Filter findings">
+    <fieldset><legend>Severity <span>potential impact</span></legend><div class="filter-options">{% for severity in severities %}<label class="filter-chip"><input type="checkbox" name="severity" value="{{ severity }}"{% if severity in (filters.severity or []) %} checked{% endif %}><span>{{ severity|capitalize }} <small>{{ severity_counts[severity] }}</small></span></label>{% endfor %}</div></fieldset>
+    <fieldset><legend>Confidence <span>verification strength</span></legend><div class="filter-options">{% for confidence in confidences %}<label class="filter-chip"><input type="checkbox" name="confidence" value="{{ confidence }}"{% if confidence in (filters.confidence or []) %} checked{% endif %}><span>{{ confidence|capitalize }}</span></label>{% endfor %}</div></fieldset>
+    <fieldset><legend>OWASP category <span>2021 edition</span></legend><div class="filter-options">{% for category, name in owasp_options %}<label class="filter-chip" title="{{ name or 'No findings for this category' }}"><input type="checkbox" name="owasp" value="{{ category }}"{% if category in (filters.owasp_category or []) %} checked{% endif %}><span>{{ category }}{% if name %} · {{ name }}{% endif %}</span></label>{% else %}<span class="subtle">No recorded categories</span>{% endfor %}</div></fieldset>
+    <fieldset><legend>Check</legend><div class="filter-options">{% for check in checks %}<label class="filter-chip"><input type="checkbox" name="check_id" value="{{ check }}"{% if check in (filters.check_id or []) %} checked{% endif %}><span class="mono">{{ check }}</span></label>{% else %}<span class="subtle">No recorded checks</span>{% endfor %}</div></fieldset>
+    <div class="filter-actions"><button class="button" type="submit">Apply filters</button><a class="text-link" href="{{ url_for('dashboard.scan', scan_id=scan.id) }}">Clear all</a><span class="subtle">Selections within a group are alternatives. Groups combine.</span></div>
+  </form>
+  {% if findings %}<div class="table-scroll"><table class="results-table"><thead><tr><th>Finding / location</th><th>Severity</th><th>Confidence</th><th>OWASP</th><th><span class="sr-only">View finding</span></th></tr></thead><tbody>{% for finding in findings %}<tr data-finding-id="{{ finding.id }}"><td><a class="primary-link" href="{{ url_for('dashboard.finding', finding_id=finding.id) }}">{{ finding.title }}</a><div class="location-summary">{{ location_summary(finding.location) }}</div></td><td>{{ severity_badge(finding.severity) }}</td><td>{{ confidence_badge(finding.confidence) }}</td><td><span class="mono">{{ finding.owasp.category }}</span><span class="subtle">{{ finding.owasp.name }}</span></td><td><a class="arrow-link" href="{{ url_for('dashboard.finding', finding_id=finding.id) }}" aria-label="Inspect {{ finding.title }}">↗</a></td></tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty"><span class="empty-symbol" aria-hidden="true">⌕</span><h3>{% if total %}No findings match this selection{% else %}No findings recorded{% endif %}</h3><p>{% if total %}Adjust the filters to explore the other findings in this scan.{% else %}Review the scan status and coverage limitations before drawing conclusions.{% endif %}</p></div>{% endif %}
+  <div class="panel-foot"><span>Severity and confidence are separate signals.</span><span>Export includes this exact selection.</span></div>
+</section>
+{% endblock %}

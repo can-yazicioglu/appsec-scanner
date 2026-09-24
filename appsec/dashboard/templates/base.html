@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>{% block title %}Findings{% endblock %} · AppSec Scanner</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+  <script src="{{ url_for('static', filename='dashboard.js') }}" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="{{ url_for('dashboard.scans') }}"><span class="brand-mark" aria-hidden="true">A</span> AppSec<span class="brand-light"> / Scanner</span></a>
+      <span class="read-only"><span class="status-dot" aria-hidden="true"></span> Local workspace <span class="header-divider">/</span> Read only</span>
+    </div>
+  </header>
+  <main id="main" class="wrap">
+    <p id="loading-status" class="loading" role="status" hidden></p>
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="wrap">
+    <span>AppSec Scanner <span class="footer-divider">/</span> Evidence-led security review</span>
+    <span>Scans run from the CLI · <code title="{{ database_path }}">{{ database_path.name }}</code></span>
+  </footer>
+</body>
+</html>

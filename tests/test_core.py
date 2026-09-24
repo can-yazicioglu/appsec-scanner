@@ -12,9 +12,15 @@ from appsec.repository import Repository
 
 
 def sample():
-    return finding("test.rule", "Fixture finding", location("DAST", url="http://localhost/?token=private", method="get"),
-                   description="Manual review", remediation="Fix it", reproduction_steps=["Inspect"],
-                   evidence={"observations": ["password='hidden'"], "verification": {"method": "fixture"}})
+    return finding(
+        "test.rule",
+        "Fixture finding",
+        location("DAST", url="http://localhost/?token=private", method="get"),
+        description="Manual review",
+        remediation="Fix it",
+        reproduction_steps=["Inspect"],
+        evidence={"observations": ["password='hidden'"], "verification": {"method": "fixture"}},
+    )
 
 
 def test_repository_redacts_merges_filters_survives_restart(tmp_path):
@@ -59,6 +65,7 @@ def test_sql_boolean_real_sqlite_confirmation(lab, client):
     assert result["evidence"]["verification"]["repetitions"] == 3
     assert "fixture-item" not in json.dumps(result)
     assert check_sqli(client, Endpoint(lab[0] + "/safe?q=hello"), "q") is None
+    assert check_sqli(client, Endpoint(lab[0] + "/escaped?q=hello"), "q") is None
 
 
 def test_variation_never_confirms():
@@ -68,14 +75,66 @@ def test_variation_never_confirms():
     assert not repeatable_boolean([{**stable, "false": [500, "b", 1]}] * 3)
 
 
+def test_inaccessible_checks_are_errors(lab, client):
+    for check in (check_xss, check_sqli):
+        with pytest.raises(ValueError, match="baseline inaccessible"):
+            check(client, Endpoint(lab[0] + "/private-xss?q=hello"), "q")
+
+
+@pytest.mark.parametrize("encoding", ["form", "json"])
+def test_post_reflection_keeps_suspected(lab, client, encoding):
+    from appsec.browser import Browser
+
+    endpoint = Endpoint(lab[0] + "/post-reflect", "POST", {"q": "hello"}, encoding)
+    result = check_xss(client, endpoint, "q", browser_factory=Browser)
+    assert result["confidence"] == "suspected"
+    assert "POST reflection" in result["description"]
+
+
 def test_cli_scan_export_and_failed_status(lab, tmp_path, capsys):
     db, output = tmp_path / "store.db", tmp_path / "out.json"
-    assert main(["--db", str(db), "scan", lab[0], "--allow-host", "127.0.0.1", "--manual",
-                 "--endpoint", lab[0] + "/sql?id=1", "--check", "sqli", "--output", str(output)]) == 0
+    assert (
+        main(
+            [
+                "--db",
+                str(db),
+                "scan",
+                lab[0],
+                "--allow-host",
+                "127.0.0.1",
+                "--manual",
+                "--endpoint",
+                lab[0] + "/sql?id=1",
+                "--check",
+                "sqli",
+                "--output",
+                str(output),
+            ]
+        )
+        == 0
+    )
     payload = json.loads(output.read_text())
     sid = payload["scan"]["id"]
     assert payload["findings"][0]["confidence"] == "confirmed"
     assert main(["--db", str(db), "export", sid, "--output", str(output)]) == 0
-    assert main(["--db", str(db), "scan", lab[0], "--allow-host", "127.0.0.1", "--manual",
-                 "--endpoint", lab[0] + "/sql?id=1", "--max-requests", "1", "--output", str(output)]) == 2
+    assert (
+        main(
+            [
+                "--db",
+                str(db),
+                "scan",
+                lab[0],
+                "--allow-host",
+                "127.0.0.1",
+                "--manual",
+                "--endpoint",
+                lab[0] + "/sql?id=1",
+                "--max-requests",
+                "1",
+                "--output",
+                str(output),
+            ]
+        )
+        == 2
+    )
     assert json.loads(output.read_text())["scan"]["status"] in ("failed", "partial")

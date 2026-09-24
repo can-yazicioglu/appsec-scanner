@@ -1,4 +1,5 @@
 """Deliberately vulnerable controlled fixture. Never deploy this service."""
+
 import html
 import sqlite3
 from contextlib import contextmanager
@@ -28,6 +29,11 @@ def create_lab():
     def escaped():
         return "<html><body>" + html.escape(request.args.get("q", "")) + "</body></html>"
 
+    @app.post("/post-reflect")
+    def post_reflect():
+        values = request.get_json(silent=True) or request.form
+        return "<html><body>" + values.get("q", "") + "</body></html>"
+
     @app.get("/unrelated")
     def unrelated():
         return '<script>alert("unrelated")</script>' + html.escape(request.args.get("q", ""))
@@ -45,7 +51,11 @@ def create_lab():
 
     @app.get("/error-only")
     def error_only():
-        return ("SQLITE_ERROR: fixture-only simulated parser error", 500) if "'" in request.args.get("q", "") else "ordinary response"
+        return (
+            ("SQLITE_ERROR: fixture-only simulated parser error", 500)
+            if "'" in request.args.get("q", "")
+            else "ordinary response"
+        )
 
     @app.get("/safe")
     def safe():

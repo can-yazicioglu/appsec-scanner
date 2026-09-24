@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_macros.html" import severity_badge, confidence_badge, location_summary, scan_status_notice, facts_table %}
+{% block title %}{{ finding.title }}{% endblock %}
+{% block content %}
+<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="{{ url_for('dashboard.scans') }}">Scan workspace</a><span>/</span><a href="{{ url_for('dashboard.scan', scan_id=finding.scan_id) }}">{{ finding.scan_id|short_id }}</a><span>/</span><span>Finding</span></nav>
+<section class="page-heading"><div><p class="eyebrow">FINDING DETAIL / {{ finding.check_id }}</p><h1>{{ finding.title }}</h1><div class="finding-badges">{{ severity_badge(finding.severity) }}{{ confidence_badge(finding.confidence) }}<span class="kind">{{ finding.owasp.category }} · {{ finding.owasp.name }}</span></div></div><a class="button secondary" href="{{ url_for('dashboard.scan', scan_id=finding.scan_id) }}">← Back to scan</a></section>
+{% if scan %}{{ scan_status_notice(scan) }}{% endif %}
+{% if finding.confidence == 'suspected' %}<div class="notice notice-warning"><strong>Manual review required.</strong> This is an indicator, not a confirmed vulnerability.{% if finding.location.kind == 'SAST' %} Lightweight pattern checks do not establish data flow or exploitability.{% endif %}</div>{% endif %}
+<div class="detail-grid">
+  <div class="detail-main">
+    <section class="panel content-panel"><span class="eyebrow">01 / ASSESSMENT</span><h2>What was observed</h2><p class="prose">{{ finding.description|redactions }}</p><h3>Affected location</h3><div class="location-block">{{ location_summary(finding.location) }}</div><h3>Remediation</h3><p class="prose">{{ finding.remediation|redactions }}</p><h3>Reproduction steps</h3><ol class="steps">{% for step in finding.reproduction_steps %}<li>{{ step|redactions }}</li>{% else %}<li>No steps recorded.</li>{% endfor %}</ol></section>
+    <section class="panel content-panel"><span class="eyebrow">02 / EVIDENCE</span><h2>Recorded evidence</h2><p class="subtle">Payloads and source snippets are inert text. <mark class="redacted">[REDACTED]</mark> marks removed sensitive values.</p>
+      {% if finding.evidence.observations %}<h3>Observations</h3><ul class="observations">{% for observation in finding.evidence.observations %}<li>{{ observation|redactions }}</li>{% endfor %}</ul>{% endif %}
+      <h3>Verification</h3><p>{{ verification_label(finding.evidence.verification.get('method'), finding.evidence.verification.get('method', 'No verification method recorded')) }}</p>{{ facts_table(finding.evidence.verification, skip=('method',)) }}
+      {% for label, value in [('Request', finding.evidence.request), ('Response', finding.evidence.response), ('Source snippet', finding.evidence.source)] %}<details class="evidence-section"{% if value is not none %} open{% endif %}><summary>{{ label }}{% if value is none %}<span class="subtle">Not available / not applicable</span>{% endif %}</summary>{% if value is not none %}<pre class="evidence">{{ value|redactions }}</pre>{% else %}<p class="subtle">No {{ label|lower }} is recorded for this finding.</p>{% endif %}</details>{% endfor %}
+    </section>
+    <details class="panel raw-record"><summary>Full finding record <span class="subtle">JSON · redacted at persistence</span></summary><pre class="evidence" id="finding-json">{{ record_json|redactions }}</pre><button class="button secondary" type="button" data-copy="finding-json">Copy JSON</button><span class="copy-status" role="status"></span></details>
+  </div>
+  <aside><section class="panel content-panel metadata-panel"><span class="eyebrow">RECORD</span><h2>Finding context</h2><dl class="metadata"><dt>Finding ID</dt><dd class="mono">{{ finding.id }}</dd><dt>Check</dt><dd class="mono">{{ finding.check_id }}</dd><dt>Source</dt><dd>{{ finding.location.kind }}</dd><dt>OWASP edition</dt><dd>{{ finding.owasp.edition }}</dd><dt>Recorded</dt><dd>{{ finding.created_at|timestamp }}</dd></dl><div class="definition"><strong>Severity = impact</strong><p>The potential consequence if the issue is exploitable.</p><strong>Confidence = evidence</strong><p>Confirmed findings have verification recorded. Suspected findings require manual review.</p></div></section></aside>
+</div>
+{% endblock %}

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "appsec-scanner"
-version = "0.1.0"
+version = "0.2.0"
 description = "A local, evidence-driven AppSec scanner and read-only dashboard"
 requires-python = ">=3.11"
 dependencies = ["requests>=2.32.4,<3", "beautifulsoup4>=4.13,<5", "Flask>=3.1,<4"]

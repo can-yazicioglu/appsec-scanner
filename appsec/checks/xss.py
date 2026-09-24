@@ -4,9 +4,14 @@ from ..models import finding, location
 
 
 def check_xss(client, endpoint, parameter, *, browser_factory=None):
+    baseline = endpoint.send(client)
+    if not 200 <= baseline.status_code < 300:
+        raise ValueError(f"XSS baseline inaccessible (HTTP {baseline.status_code})")
     nonce = "appsec_" + secrets.token_hex(16)
-    payload = f'\"><svg onload=alert("{nonce}")>'
+    payload = f'"><svg onload=alert("{nonce}")>'
     response = endpoint.send(client, parameter, payload)
+    if response.status_code in (401, 403, 429):
+        raise ValueError(f"XSS probe denied/rate-limited (HTTP {response.status_code})")
     if nonce not in response.text:
         return None
     confirmed = False
@@ -16,7 +21,11 @@ def check_xss(client, endpoint, parameter, *, browser_factory=None):
         try:
             with browser_factory(client) as browser:
                 confirmed, verification = browser.verify_xss(endpoint.probe_url(parameter, payload), nonce)
-            reason = "Browser observed this probe's unique alert." if confirmed else "Browser did not observe probe execution."
+            reason = (
+                "Browser observed this probe's unique alert."
+                if confirmed
+                else "Browser did not observe probe execution."
+            )
         except Exception as exc:
             reason = f"Browser verification unavailable ({type(exc).__name__}); manual review required."
             verification["unavailable"] = type(exc).__name__
@@ -24,16 +33,40 @@ def check_xss(client, endpoint, parameter, *, browser_factory=None):
         reason = "POST reflection found; browser execution verification supports GET query inputs only. Manual review required."
     raw = payload in response.text
     return finding(
-        "dast.xss.reflected", "Reflected cross-site scripting" if confirmed else "Reflected input indicator",
-        location("DAST", url=endpoint.url, method=endpoint.method, parameter=parameter,
-                 input_location=endpoint.input_location), severity="high" if confirmed else "medium",
+        "dast.xss.reflected",
+        "Reflected cross-site scripting" if confirmed else "Reflected input indicator",
+        location(
+            "DAST",
+            url=endpoint.url,
+            method=endpoint.method,
+            parameter=parameter,
+            input_location=endpoint.input_location,
+        ),
+        severity="high" if confirmed else "medium",
         confidence="confirmed" if confirmed else "suspected",
-        description=reason, remediation="Apply context-aware output encoding and safe DOM APIs; avoid HTML insertion of untrusted input. Add a restrictive CSP as defense in depth.",
-        reproduction_steps=[f"Supply the recorded payload in {parameter} using {endpoint.method} {endpoint.url}.",
-                            "In an isolated browser, inspect whether the matching probe alert executes."],
-        evidence={"request": {"method": endpoint.method, "url": client.redactor.url(endpoint.url),
-                              "parameter": parameter, "payload": payload},
-                  "response": {"status": response.status_code, "excerpt": payload if raw else nonce,
-                               "media_type": response.headers.get("Content-Type")},
-                  "observations": ["Unique probe marker was reflected.", f"Unescaped payload present: {raw}", reason],
-                  "verification": verification})
+        description=reason,
+        remediation="Apply context-aware output encoding and safe DOM APIs; avoid HTML insertion of untrusted input. Add a restrictive CSP as defense in depth.",
+        reproduction_steps=[
+            f"Supply the recorded payload in {parameter} using {endpoint.method} {endpoint.url}.",
+            "In an isolated browser, inspect whether the matching probe alert executes.",
+        ],
+        evidence={
+            "request": {
+                "method": endpoint.method,
+                "url": client.redactor.url(endpoint.url),
+                "parameter": parameter,
+                "payload": payload,
+            },
+            "response": {
+                "status": response.status_code,
+                "excerpt": payload if raw else nonce,
+                "media_type": response.headers.get("Content-Type"),
+            },
+            "observations": [
+                "Unique probe marker was reflected.",
+                f"Unescaped payload present: {raw}",
+                reason,
+            ],
+            "verification": verification,
+        },
+    )

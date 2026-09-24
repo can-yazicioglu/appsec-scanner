@@ -12,6 +12,15 @@ services:
       - ./examples:/examples:ro
     networks: [lab]
     command: ["scan", "http://juice-shop:3000", "--allow-host", "juice-shop", "--spa", "--endpoint", "http://juice-shop:3000/rest/products/search?q=apple"]
+  dashboard:
+    build: .
+    profiles: [tools]
+    volumes:
+      - results:/data:ro
+    ports:
+      - "127.0.0.1:5000:5000"
+    command: ["dashboard", "--host", "0.0.0.0", "--port", "5000"]
+    networks: [lab]
 networks:
   lab:
 volumes:

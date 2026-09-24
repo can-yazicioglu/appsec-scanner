@@ -5,6 +5,11 @@ indicators requiring manual review. Python, requests, BeautifulSoup, optional
 Playwright, SQLite and a read-only Flask dashboard. Built incrementally through
 v0.1–v0.4; see `docs/verification.md` for evidence as milestones are completed.
 
+[Architecture](docs/architecture.md) · [Data contract](docs/data-contract.md) ·
+[Dashboard](docs/dashboard.md) · [Actual fixture sample](examples/sample-fixture-dast.json)
+
+![Read-only dashboard displaying labeled fixture records](docs/assets/dashboard-fixture.png)
+
 ## Quick start
 
 ```sh
@@ -16,6 +21,7 @@ docker compose up -d juice-shop
 appsec scan --config examples/juice-shop.json --output results/juice-shop.json
 appsec scans
 appsec export SCAN_ID --output results/export.json
+appsec dashboard
 ```
 
 Only scan systems you own or have approval to test. Every run requires an
@@ -54,13 +60,51 @@ The [data contract](docs/data-contract.md) defines persistence and export.
 Secrets are redacted before persistence, and response evidence is minimized.
 Keep real credentials in environment variables or ignored `local/` files.
 
+## Authentication and dashboard (v0.2)
+
+```sh
+# Set these interactively in your shell; don't commit actual values.
+read -r -p 'Test account email: ' APPSEC_EMAIL; export APPSEC_EMAIL
+read -r -s -p 'Test account password: ' APPSEC_PASSWORD; export APPSEC_PASSWORD
+appsec scan --config examples/juice-shop.json --auth examples/auth-juice-shop.json
+appsec --db results/appsec.db dashboard --port 5000
+```
+
+Open http://127.0.0.1:5000. The dashboard reads existing results and exports JSON;
+scans remain CLI-driven. It uses SQLite read-only connections and has no scan
+initiation or mutation routes. Use on loopback; it is not a multiuser hosted app.
+
+Authentication accepts `cookies`, `bearer_token`, limited auth `headers`, and
+origin-scoped `local_storage`. `${ENV_NAME}` values are resolved without logging
+them. Automated `login` supports form or JSON, optional HTML CSRF field fetching,
+and a JSON `token_path` with optional `token_cookie` and `local_storage_key`.
+The Juice Shop example sets both because the inspected whoami route reads a
+token cookie. Login requires a `verify` endpoint with explicit JSON field
+or body-content assertions. HTTP 200 alone is insufficient. See example configs
+and [component documentation](docs/dashboard.md). MFA, CAPTCHA and arbitrary
+interactive SSO are not automated; supply an existing authorized test session.
+
+Authenticated requests, SPA discovery and browser XSS verification share the
+session. Credentials are confined to the exact target origin; cross-origin
+redirects are blocked even when both hosts are approved. Browser HTTP uses the
+scoped requests transport (with TLS verification), service workers/WebSockets
+are blocked. This changes browser transport behavior; streaming, client TLS,
+redirect-relative navigation and unusual cookie flows may differ from a normal
+browser. Scope is a hostname policy, not a DNS pinning/network firewall policy.
+
 ## Development
 
 ```sh
 pytest -q
 ruff check appsec tests
 docker compose --profile tools run --rm scanner
+docker compose --profile tools up -d dashboard
 ```
+
+Run the container scanner at least once before starting the container dashboard.
+They share the named `results` volume; the dashboard mounts it read-only. Local
+CLI runs use `results/appsec.db` instead. Container export:
+`docker compose --profile tools run --rm scanner export SCAN_ID > results/export.json`.
 
 Controlled test fixtures are deliberately vulnerable and bind loopback only.
 Target findings are never inferred from fixture results. PortSwigger support is

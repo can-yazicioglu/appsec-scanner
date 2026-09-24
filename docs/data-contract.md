@@ -61,7 +61,9 @@ not a general DLP guarantee; use local test data. Credentials stay in ignored
 
 `from appsec.repository import Repository`
 
-`Repository(path)` opens/initializes storage; `.close()` and context manager
+`Repository(path, redactor=None, *, read_only=False)` opens/initializes storage;
+read_only uses SQLite URI `mode=ro` plus `query_only` and rejects missing or
+noncurrent schemas without migration. `.close()` and context manager
 supported. Returned values are ordinary JSON-compatible dicts, independent of
 the connection. Dashboard and exporter use only these reads:
 
@@ -86,13 +88,15 @@ Writes owned by CX: `start_scan(scope, scan_type) -> str`,
 
 `from appsec.exporter import export_scan`
 
-`export_scan(repository, scan_id, *, severity=None, owasp_category=None) -> dict` returns:
+`export_scan(repository, scan_id, *, severity=None, owasp_category=None, confidence=None, check_id=None) -> dict` returns:
 `{"schema_version": 1, "exported_at": "...Z", "scan": {...}, "filters": {...}, "findings": [...]}`.
 The additive `filters` field was reviewed and accepted by CX and CL during the
 v0.1 checkpoint. Both filter arguments accept a string or iterable of strings.
-`filters` always contains `severity` and `owasp_category`, each a canonical list
+`filters` always contains `severity`, `owasp_category`, `confidence`, and `check_id`, each a canonical list
 or null (unfiltered). OR within a dimension, AND across dimensions. No filters
-means all findings. Invalid enum/category values raise ValueError. Dashboard
+means all findings. Invalid enum/category/type values raise ValueError. Check IDs
+are exact identifiers; unknown IDs match nothing. These extra dimensions were
+agreed by CX/CL during v0.2 integration. Dashboard
 views and downloads must apply the same filters. `dumps_export(envelope)` returns
 the shared UTF-8-compatible indented JSON string with trailing newline.
 Missing scan raises ValueError. Include all findings, including suspected;

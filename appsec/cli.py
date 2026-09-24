@@ -4,13 +4,13 @@ import sys
 from pathlib import Path
 
 from .config import ScanConfig, load_json
-from .exporter import export_scan
+from .exporter import dumps_export, export_scan
 from .repository import Repository
 from .scanner import run_scan
 
 
 def write_json(value, path=None):
-    text = json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
+    text = dumps_export(value)
     if path:
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         Path(path).write_text(text, encoding="utf-8")
@@ -35,7 +35,14 @@ def parser():
     scan.add_argument("--verify-xss", action="store_true", default=None)
     scan.add_argument("--allow-post", action="store_true", default=None)
     scan.add_argument("--auth", help="JSON authentication file (keep in ignored local/)")
-    for name in ("max-pages", "max-depth", "max-endpoints", "max-parameters", "max-requests", "browser-wait-ms"):
+    for name in (
+        "max-pages",
+        "max-depth",
+        "max-endpoints",
+        "max-parameters",
+        "max-requests",
+        "browser-wait-ms",
+    ):
         scan.add_argument("--" + name, type=int)
     for name in ("max-seconds", "timeout"):
         scan.add_argument("--" + name, type=float)
@@ -44,12 +51,20 @@ def parser():
     export.add_argument("scan_id")
     export.add_argument("--output")
     commands.add_parser("scans", help="List recent scans")
+    dashboard = commands.add_parser("dashboard", help="Serve the read-only local dashboard")
+    dashboard.add_argument("--host", default="127.0.0.1")
+    dashboard.add_argument("--port", type=int, default=5000)
     return root
 
 
 def main(argv=None):
     args = parser().parse_args(argv)
     try:
+        if args.command == "dashboard":
+            from .dashboard import create_app
+
+            create_app(args.db).run(host=args.host, port=args.port, debug=False)
+            return 0
         with Repository(args.db) as repository:
             if args.command == "scan":
                 values = load_json(args.config) if args.config else {}
@@ -67,8 +82,15 @@ def main(argv=None):
                 if args.output:
                     write_json(export_scan(repository, scan_id), args.output)
                 scan = repository.get_scan(scan_id)
-                print(json.dumps({"scan_id": scan_id, "status": scan["status"],
-                                  "findings": len(repository.list_findings(scan_id))}))
+                print(
+                    json.dumps(
+                        {
+                            "scan_id": scan_id,
+                            "status": scan["status"],
+                            "findings": len(repository.list_findings(scan_id)),
+                        }
+                    )
+                )
                 return 0 if scan["status"] == "completed" else 2
             if args.command == "export":
                 write_json(export_scan(repository, args.scan_id), args.output)
@@ -77,7 +99,10 @@ def main(argv=None):
         return 0
     except (ValueError, TypeError, OSError, KeyError) as exc:
         # Config can contain secrets; don't print its values or parser diagnostics.
-        print(f"appsec: configuration/storage error ({type(exc).__name__}); check paths, required fields and scope.", file=sys.stderr)
+        print(
+            f"appsec: configuration/storage error ({type(exc).__name__}); check paths, required fields and scope.",
+            file=sys.stderr,
+        )
         return 1
 
 

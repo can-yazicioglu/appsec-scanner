@@ -50,10 +50,20 @@ class SafeSession:
             request_headers = dict(headers or {})
             if self.origin and origin(url) == self.origin:
                 request_headers.update(self.auth_headers)
+            elif self.origin:
+                request_headers["Cookie"] = ""
             try:
-                response = self.session.request(method, url, params=params, data=data, json=json,
-                                                headers=request_headers, timeout=self.timeout,
-                                                allow_redirects=False, stream=True)
+                response = self.session.request(
+                    method,
+                    url,
+                    params=params,
+                    data=data,
+                    json=json,
+                    headers=request_headers,
+                    timeout=self.timeout,
+                    allow_redirects=False,
+                    stream=True,
+                )
                 chunks, size = [], 0
                 started = monotonic()
                 for chunk in response.iter_content(65536):
@@ -70,12 +80,18 @@ class SafeSession:
             except requests.RequestException as exc:
                 # Exception text may contain URL credentials or response content.
                 raise RequestFailure(f"HTTP request failed ({type(exc).__name__})") from exc
-            if follow and response.status_code in (301, 302, 303, 307, 308) and response.headers.get("Location"):
+            if (
+                follow
+                and response.status_code in (301, 302, 303, 307, 308)
+                and response.headers.get("Location")
+            ):
                 next_url = self.scope.require(urljoin(response.url, response.headers["Location"]))
                 if origin(next_url) != origin(response.url):
                     # Avoid forwarding login bodies, CSRF fields or custom headers across origins.
                     raise ScopeError("Cross-origin redirect blocked")
-                if response.status_code == 303 or (response.status_code in (301, 302) and method.upper() == "POST"):
+                if response.status_code == 303 or (
+                    response.status_code in (301, 302) and method.upper() == "POST"
+                ):
                     method, data, json = "GET", None, None
                 url, params = next_url, None
                 continue

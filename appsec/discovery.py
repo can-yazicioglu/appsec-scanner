@@ -33,7 +33,9 @@ class Endpoint:
 
     @property
     def parameters(self):
-        return [k for k, v in self.inputs.items() if not SECRET_KEY.search(k) and isinstance(v, (str, int, float))]
+        return [
+            k for k, v in self.inputs.items() if not SECRET_KEY.search(k) and isinstance(v, (str, int, float))
+        ]
 
     def values(self, parameter=None, payload=None):
         return {**self.inputs, **({parameter: payload} if parameter is not None else {})}

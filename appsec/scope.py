@@ -1,4 +1,5 @@
 """Exact canonical hostname allowlisting, shared by every network path."""
+
 import ipaddress
 from urllib.parse import urlsplit, urlunsplit
 
@@ -33,7 +34,12 @@ class Scope:
             if any(ord(c) < 33 for c in url) or "\\" in url:
                 raise ScopeError("Ambiguous URL rejected")
             parts = urlsplit(url)
-            if parts.scheme not in ("http", "https") or not parts.hostname or parts.username or parts.password:
+            if (
+                parts.scheme not in ("http", "https")
+                or not parts.hostname
+                or parts.username
+                or parts.password
+            ):
                 raise ScopeError("Only HTTP(S) URLs without userinfo are allowed")
             host = hostname(parts.hostname)
             port = parts.port  # Validates malformed/out-of-range ports.

@@ -12,6 +12,7 @@ import json
 import re
 import sqlite3
 from pathlib import Path
+from urllib.parse import quote
 
 from flask import Flask, current_app, g, jsonify, render_template, request
 from markupsafe import Markup, escape
@@ -19,11 +20,6 @@ from markupsafe import Markup, escape
 from ..exporter import InvalidFilterError, ScanNotFoundError
 from ..redaction import MASK
 from ..repository import Repository
-
-# Repository(path) initializes an unversioned file and would run future
-# migrations, so the dashboard only opens files already at this version.
-SUPPORTED_SCHEMA_VERSION = 1
-SQLITE_MAGIC = b"SQLite format 3\x00"
 
 CONTENT_SECURITY_POLICY = "; ".join((
     "default-src 'none'", "script-src 'self'", "style-src 'self'", "img-src 'self'",
@@ -38,13 +34,16 @@ SECURITY_HEADERS = {
     "Cache-Control": "no-store",
 }
 
+# Labels describe the method attempted, never its outcome: confidence and the
+# recorded facts say whether it succeeded (browser-dialog may observe nothing).
 VERIFICATION_LABELS = {
-    "browser-dialog": "Browser observed the probe executing",
-    "reflection": "Payload reflection only (indicator)",
-    "boolean-differential": "Repeatable boolean differential",
-    "error-indicator": "Database error string only (indicator)",
+    "browser-dialog": "Browser execution check for the probe's alert dialog",
+    "reflection": "Payload reflection (indicator only)",
+    "boolean-differential": "Repeated boolean response differential",
+    "error-indicator": "Database error string (indicator only)",
 }
-REDACTION = re.compile(re.escape(MASK))
+# Redacted URLs carry the mask percent-encoded.
+REDACTION = re.compile(re.escape(MASK) + "|" + re.escape(quote(MASK, safe="")))
 
 
 class StoreUnavailable(Exception):
@@ -75,33 +74,14 @@ def get_repository() -> Repository:
     """Open the existing store for this request; never create or migrate it."""
     if "repository" not in g:
         path = current_app.config["DATABASE_PATH"]
-        version = _schema_version(path)
-        if version != SUPPORTED_SCHEMA_VERSION:
-            raise StoreUnavailable(
-                f"The database at {path} uses schema version {version}; this dashboard reads version "
-                f"{SUPPORTED_SCHEMA_VERSION}. Migrations are applied by the scanner CLI, never by the dashboard.")
         try:
-            g.repository = Repository(path)
+            g.repository = Repository(path, read_only=True)
         except (ValueError, sqlite3.Error, OSError) as exc:
-            raise StoreUnavailable(f"The database at {path} could not be opened ({type(exc).__name__}).") from exc
+            raise StoreUnavailable(
+                f"The database at {path} could not be opened ({type(exc).__name__}). "
+                "Run the scanner CLI first to create or migrate the store; the dashboard only reads existing results."
+            ) from exc
     return g.repository
-
-
-def _schema_version(path: Path) -> int:
-    # SQLite stores PRAGMA user_version big-endian at byte offset 60 of the
-    # header; reading it avoids opening a connection that could write.
-    try:
-        with path.open("rb") as handle:
-            header = handle.read(100)
-    except FileNotFoundError:
-        raise StoreUnavailable(
-            f"No scanner database at {path}. Run a scan with the CLI first; "
-            "the dashboard does not create databases.") from None
-    except OSError as exc:
-        raise StoreUnavailable(f"The database at {path} could not be read ({type(exc).__name__}).") from exc
-    if len(header) < 100 or not header.startswith(SQLITE_MAGIC):
-        raise StoreUnavailable(f"{path} is not a scanner SQLite database.")
-    return int.from_bytes(header[60:64], "big")
 
 
 def _close_repository(_exc=None):
@@ -149,7 +129,7 @@ def as_text(value) -> str:
 def highlight_redactions(value) -> Markup:
     """Escape evidence text, then mark the store's redaction placeholder."""
     escaped = str(escape(as_text(value)))
-    # MASK has no HTML-significant characters, so it survives escaping verbatim.
+    # Both mask forms lack HTML-significant characters, so they survive escaping verbatim.
     return Markup(REDACTION.sub(lambda m: f'<mark class="redacted">{m.group(0)}</mark>', escaped))
 
 

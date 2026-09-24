@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "_macros.html" import severity_badge, status_badge %}
+{% block title %}Scan workspace{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div><p class="eyebrow">APPLICATION SECURITY / RESULTS</p><h1>Scan workspace<span class="accent">.</span></h1><p class="lede">Review the evidence. Understand the exposure.</p></div>
+  <div class="workspace-note"><span class="tiny-label">WORKFLOW</span><p>Scan in the terminal.<br>Investigate here.</p></div>
+</section>
+<section class="metrics" aria-label="Results on this page">
+  <div class="metric"><span class="tiny-label">SCANS ON THIS PAGE</span><strong>{{ scans|length }}<span class="metric-unit">runs</span></strong></div>
+  <div class="metric"><span class="tiny-label">RECORDED FINDINGS</span><strong>{{ total_findings }}<span class="metric-unit">on this page</span></strong></div>
+  <div class="metric metric-explainer"><span class="tiny-label">READ THE TWO SIGNALS</span><p><b>Severity</b> describes impact.<br><b>Confidence</b> describes verification.</p></div>
+</section>
+<section class="panel">
+  <div class="panel-heading"><div><span class="eyebrow">SCAN HISTORY</span><h2>Recent investigations</h2></div><span class="subtle">Newest first · UTC</span></div>
+  <form class="toolbar" method="get" aria-label="Filter scan history">
+    <label>Status<select name="status"><option value="">All statuses</option>{% for choice in statuses %}<option value="{{ choice }}"{% if choice == status %} selected{% endif %}>{{ choice|capitalize }}</option>{% endfor %}</select></label>
+    <label>Scan type<select name="scan_type"><option value="">All types</option>{% for choice in ['DAST', 'SAST'] %}<option value="{{ choice }}"{% if choice == scan_type %} selected{% endif %}>{{ choice }}</option>{% endfor %}</select></label>
+    <button type="submit" class="button">Apply filters</button>{% if status or scan_type %}<a class="text-link" href="{{ url_for('dashboard.scans') }}">Clear</a>{% endif %}
+  </form>
+  {% if scans %}
+  <div class="table-scroll"><table class="results-table scan-table"><thead><tr><th>Target / source</th><th>Type</th><th>Status</th><th>Findings by severity</th><th>Started</th><th><span class="sr-only">View scan</span></th></tr></thead><tbody>
+  {% for scan in scans %}
+    <tr><td><a class="primary-link scope" href="{{ url_for('dashboard.scan', scan_id=scan.id) }}">{{ scan.scope|redactions }}</a><span class="subtle mono">{{ scan.id|short_id }}</span></td><td><span class="kind">{{ scan.scan_type }}</span></td><td>{{ status_badge(scan.status) }}</td><td><div class="severity-summary">{% for severity in severities if counts[scan.id][severity] %}<span class="severity severity-{{ severity }}" title="{{ severity }}">{{ counts[scan.id][severity] }} {{ severity|capitalize }}</span>{% else %}<span class="subtle">{% if scan.status != "completed" %}None recorded · incomplete scan{% else %}No findings recorded{% endif %}</span>{% endfor %}</div></td><td class="date-cell">{{ scan.started_at|timestamp }}</td><td><a class="arrow-link" href="{{ url_for('dashboard.scan', scan_id=scan.id) }}" aria-label="View scan {{ scan.id|short_id }}">↗</a></td></tr>
+  {% endfor %}
+  </tbody></table></div>
+  {% else %}
+  <div class="empty"><span class="empty-symbol" aria-hidden="true">⌕</span><h3>{% if status or scan_type %}No scans match these filters{% else %}Your next investigation starts in the CLI{% endif %}</h3><p>{% if status or scan_type %}Clear the filters to see all stored scan runs.{% else %}Run an approved local scan to populate this workspace. Results persist in the shared SQLite store.{% endif %}</p>{% if not status and not scan_type %}<code>appsec scan --help</code>{% endif %}</div>
+  {% endif %}
+  <div class="pagination"><span>Page {{ page }} · up to 50 scans per page</span><nav aria-label="Scan pages">{% if page > 1 %}<a class="button secondary" href="{{ url_for('dashboard.scans', page=page-1, status=status or '', scan_type=scan_type or '') }}">← Previous</a>{% endif %}{% if has_next %}<a class="button secondary" href="{{ url_for('dashboard.scans', page=page+1, status=status or '', scan_type=scan_type or '') }}">Next →</a>{% endif %}</nav></div>
+</section>
+<p class="interpretation-note"><span aria-hidden="true">ⓘ</span> A scan with no findings is not a security assessment. Review its status, errors, and coverage limitations.</p>
+{% endblock %}

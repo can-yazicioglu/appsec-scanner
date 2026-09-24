@@ -1,0 +1,15 @@
+{
+  "login": {
+    "url": "http://127.0.0.1:3000/rest/user/login",
+    "encoding": "json",
+    "fields": {"email": "${APPSEC_EMAIL}", "password": "${APPSEC_PASSWORD}"},
+    "token_path": "authentication.token",
+    "token_cookie": "token",
+    "local_storage_key": "token"
+  },
+  "verify": {
+    "url": "http://127.0.0.1:3000/rest/user/whoami",
+    "json": {"user.email": "${APPSEC_EMAIL}"},
+    "identity_path": "user.id"
+  }
+}

@@ -17,13 +17,39 @@ def location(kind, **kwargs):
     return {key: kind if key == "kind" else kwargs.get(key) for key in LOCATION_KEYS}
 
 
-def finding(check_id, title, location, *, severity="medium", confidence="suspected",
-            description, remediation, reproduction_steps, evidence, category="A03:2021", name="Injection"):
-    return dict(check_id=check_id, title=title, severity=severity, confidence=confidence,
-                owasp={"edition": "2021", "category": category, "name": name},
-                description=description, remediation=remediation, reproduction_steps=reproduction_steps,
-                location=location, evidence={"request": None, "response": None, "source": None,
-                                             "observations": [], "verification": {}, **evidence})
+def finding(
+    check_id,
+    title,
+    location,
+    *,
+    severity="medium",
+    confidence="suspected",
+    description,
+    remediation,
+    reproduction_steps,
+    evidence,
+    category="A03:2021",
+    name="Injection",
+):
+    return dict(
+        check_id=check_id,
+        title=title,
+        severity=severity,
+        confidence=confidence,
+        owasp={"edition": "2021", "category": category, "name": name},
+        description=description,
+        remediation=remediation,
+        reproduction_steps=reproduction_steps,
+        location=location,
+        evidence={
+            "request": None,
+            "response": None,
+            "source": None,
+            "observations": [],
+            "verification": {},
+            **evidence,
+        },
+    )
 
 
 def normalize_finding(value):
@@ -44,7 +70,12 @@ def normalize_finding(value):
             raise ValueError("DAST requires URL and method")
         loc["method"] = loc["method"].upper()
     else:
-        if not loc["file_path"] or not isinstance(loc["line"], int) or loc["line"] < 1 or not loc["pattern_id"]:
+        if (
+            not loc["file_path"]
+            or not isinstance(loc["line"], int)
+            or loc["line"] < 1
+            or not loc["pattern_id"]
+        ):
             raise ValueError("SAST requires relative path, positive line and pattern ID")
         if loc["file_path"].startswith("/") or ".." in loc["file_path"].split("/"):
             raise ValueError("SAST path must be source-relative")
@@ -52,7 +83,9 @@ def normalize_finding(value):
             raise ValueError("SAST findings must remain suspected")
     data["location"] = loc
     if data.get("owasp", {}).get("edition") != "2021" or data["owasp"].get("category") not in (
-        "A01:2021", "A03:2021", "A07:2021"
+        "A01:2021",
+        "A03:2021",
+        "A07:2021",
     ):
         raise ValueError("Unsupported OWASP mapping")
     if not isinstance(data.get("reproduction_steps"), list) or not all(
@@ -60,7 +93,9 @@ def normalize_finding(value):
     ):
         raise ValueError("Reproduction steps must be strings")
     evidence = data.get("evidence", {})
-    if not isinstance(evidence.get("observations"), list) or not isinstance(evidence.get("verification"), dict):
+    if not isinstance(evidence.get("observations"), list) or not isinstance(
+        evidence.get("verification"), dict
+    ):
         raise ValueError("Evidence requires observations and verification")
     data["evidence"] = {"request": None, "response": None, "source": None, **evidence}
     data["id"] = data.get("id") or str(uuid.uuid4())
@@ -69,4 +104,6 @@ def normalize_finding(value):
 
 
 def fingerprint(data):
-    return hashlib.sha256(json.dumps([data["check_id"], data["location"]], sort_keys=True).encode()).hexdigest()
+    return hashlib.sha256(
+        json.dumps([data["check_id"], data["location"]], sort_keys=True).encode()
+    ).hexdigest()

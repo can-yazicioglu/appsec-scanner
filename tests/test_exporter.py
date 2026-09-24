@@ -67,7 +67,7 @@ def test_export_preserves_contract_and_is_an_independent_json_snapshot():
 
     assert set(result) == {"schema_version", "exported_at", "scan", "filters", "findings"}
     assert result["schema_version"] == 1
-    assert result["filters"] == {"severity": None, "owasp_category": None}
+    assert result["filters"] == {"severity": None, "owasp_category": None, "confidence": None, "check_id": None}
     assert re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z", result["exported_at"])
     timestamp = datetime.fromisoformat(result["exported_at"].replace("Z", "+00:00"))
     assert before.replace(microsecond=before.microsecond // 1000 * 1000) <= timestamp <= after
@@ -123,11 +123,11 @@ def test_filters_select_or_within_and_across_dimensions_and_record_scope():
     result = export_scan(repository, "scan-1", severity=["low", "high", "high"], owasp_category=["A03:2021"])
     assert [f["id"] for f in result["findings"]] == ["f-high-a03", "f-low-a03"]
     # Canonical: severity order, deduplicated, so equal selections export identically.
-    assert result["filters"] == {"severity": ["high", "low"], "owasp_category": ["A03:2021"]}
+    assert result["filters"] == {"severity": ["high", "low"], "owasp_category": ["A03:2021"], "confidence": None, "check_id": None}
 
     result = export_scan(repository, "scan-1", owasp_category=["A01:2021"])
     assert [f["id"] for f in result["findings"]] == ["f-medium-a01"]
-    assert result["filters"] == {"severity": None, "owasp_category": ["A01:2021"]}
+    assert result["filters"] == {"severity": None, "owasp_category": ["A01:2021"], "confidence": None, "check_id": None}
 
     result = export_scan(repository, "scan-1", severity=["critical"])
     assert result["findings"] == []
@@ -136,7 +136,7 @@ def test_filters_select_or_within_and_across_dimensions_and_record_scope():
 
 def test_empty_filter_values_mean_unfiltered():
     result = export_scan(_mixed_reads(), "scan-1", severity=["", " "], owasp_category=[])
-    assert result["filters"] == {"severity": None, "owasp_category": None}
+    assert result["filters"] == {"severity": None, "owasp_category": None, "confidence": None, "check_id": None}
     assert len(result["findings"]) == 3
 
 
@@ -192,3 +192,23 @@ def test_real_repository_export_matches_contract_and_keeps_redaction(tmp_path):
     for stamp in (result["exported_at"], result["scan"]["started_at"], result["scan"]["finished_at"],
                   item["created_at"]):
         assert re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z", stamp)
+
+
+@pytest.mark.parametrize("kwargs", [{"severity": ["high", None]}, {"severity": 1},
+                                    {"owasp_category": [42]}, {"confidence": [False]},
+                                    {"check_id": [object()]}, {"confidence": "maybe"},
+                                    {"check_id": "<script>"}, {"check_id": "a" * 129}])
+def test_malformed_filter_types_and_identifiers_are_rejected(kwargs):
+    with pytest.raises(InvalidFilterError):
+        export_scan(_mixed_reads(), "scan-1", **kwargs)
+
+
+def test_confidence_and_check_filters_compose_with_severity():
+    repository = _mixed_reads()
+    repository.findings[0]["confidence"] = "confirmed"
+    repository.findings[0]["check_id"] = "dast.sqli"
+    result = export_scan(repository, "scan-1", severity="high", confidence="confirmed", check_id="dast.sqli")
+    assert [f["id"] for f in result["findings"]] == ["f-high-a03"]
+    assert result["filters"]["confidence"] == ["confirmed"]
+    assert result["filters"]["check_id"] == ["dast.sqli"]
+    assert export_scan(repository, "scan-1", confidence="suspected", check_id="dast.sqli")["findings"] == []
