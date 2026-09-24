@@ -1,0 +1,18 @@
+services:
+  juice-shop:
+    image: bkimminich/juice-shop:v19.2.1
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks: [lab]
+  scanner:
+    build: .
+    profiles: [tools]
+    volumes:
+      - results:/data
+      - ./examples:/examples:ro
+    networks: [lab]
+    command: ["scan", "http://juice-shop:3000", "--allow-host", "juice-shop", "--spa", "--endpoint", "http://juice-shop:3000/rest/products/search?q=apple"]
+networks:
+  lab:
+volumes:
+  results:

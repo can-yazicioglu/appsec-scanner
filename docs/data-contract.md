@@ -86,8 +86,15 @@ Writes owned by CX: `start_scan(scope, scan_type) -> str`,
 
 `from appsec.exporter import export_scan`
 
-`export_scan(repository, scan_id) -> dict` returns:
-`{"schema_version": 1, "exported_at": "...Z", "scan": {...}, "findings": [...]}`.
+`export_scan(repository, scan_id, *, severity=None, owasp_category=None) -> dict` returns:
+`{"schema_version": 1, "exported_at": "...Z", "scan": {...}, "filters": {...}, "findings": [...]}`.
+The additive `filters` field was reviewed and accepted by CX and CL during the
+v0.1 checkpoint. Both filter arguments accept a string or iterable of strings.
+`filters` always contains `severity` and `owasp_category`, each a canonical list
+or null (unfiltered). OR within a dimension, AND across dimensions. No filters
+means all findings. Invalid enum/category values raise ValueError. Dashboard
+views and downloads must apply the same filters. `dumps_export(envelope)` returns
+the shared UTF-8-compatible indented JSON string with trailing newline.
 Missing scan raises ValueError. Include all findings, including suspected;
 preserve nulls, Unicode, lists and numbers, no HTML markup or internal SQL.
 CLI writes UTF-8 JSON with indentation and newline. Dashboard uses same function

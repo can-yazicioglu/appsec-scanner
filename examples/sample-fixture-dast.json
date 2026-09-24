@@ -1,0 +1,350 @@
+{
+  "schema_version": 1,
+  "exported_at": "2026-09-24T14:53:49.633Z",
+  "scan": {
+    "id": "fc72092c-93ea-4e59-8747-c8c327a65fbf",
+    "scope": "http://127.0.0.1:41057/",
+    "scan_type": "DAST",
+    "started_at": "2026-09-24T14:53:47.986Z",
+    "finished_at": "2026-09-24T14:53:49.631Z",
+    "status": "completed",
+    "errors": [],
+    "limitations": []
+  },
+  "filters": {
+    "severity": null,
+    "owasp_category": null
+  },
+  "findings": [
+    {
+      "id": "278c8076-3840-4552-919c-a642605f47a7",
+      "scan_id": "fc72092c-93ea-4e59-8747-c8c327a65fbf",
+      "check_id": "dast.xss.reflected",
+      "title": "Reflected cross-site scripting",
+      "severity": "high",
+      "confidence": "confirmed",
+      "owasp": {
+        "edition": "2021",
+        "category": "A03:2021",
+        "name": "Injection"
+      },
+      "description": "Browser observed this probe's unique alert.",
+      "remediation": "Apply context-aware output encoding and safe DOM APIs; avoid HTML insertion of untrusted input. Add a restrictive CSP as defense in depth.",
+      "reproduction_steps": [
+        "Supply the recorded payload in q using GET http://127.0.0.1:41057/xss.",
+        "In an isolated browser, inspect whether the matching probe alert executes."
+      ],
+      "location": {
+        "kind": "DAST",
+        "url": "http://127.0.0.1:41057/xss",
+        "method": "GET",
+        "parameter": "q",
+        "input_location": "query",
+        "file_path": null,
+        "line": null,
+        "pattern_id": null
+      },
+      "evidence": {
+        "request": {
+          "method": "GET",
+          "url": "http://127.0.0.1:41057/xss",
+          "parameter": "q",
+          "payload": "\"><svg onload=alert(\"appsec_b25d4e79e9a6a2cf42493af5a4104994\")>"
+        },
+        "response": {
+          "status": 200,
+          "excerpt": "\"><svg onload=alert(\"appsec_b25d4e79e9a6a2cf42493af5a4104994\")>",
+          "media_type": "text/html; charset=utf-8"
+        },
+        "source": null,
+        "observations": [
+          "Unique probe marker was reflected.",
+          "Unescaped payload present: True",
+          "Browser observed this probe's unique alert."
+        ],
+        "verification": {
+          "method": "browser-dialog",
+          "probe_id": "appsec_b25d4e79e9a6a2cf42493af5a4104994",
+          "observed_probe_dialog": true,
+          "errors": []
+        }
+      },
+      "created_at": "2026-09-24T14:53:48.781Z"
+    },
+    {
+      "id": "47eab414-b9c8-48d3-8877-99aeb76c847b",
+      "scan_id": "fc72092c-93ea-4e59-8747-c8c327a65fbf",
+      "check_id": "dast.sqli",
+      "title": "SQL injection",
+      "severity": "high",
+      "confidence": "confirmed",
+      "owasp": {
+        "edition": "2021",
+        "category": "A03:2021",
+        "name": "Injection"
+      },
+      "description": "Three repeated boolean differentials matched stable baseline and independent true control.",
+      "remediation": "Use parameterized queries for all values; allowlist identifiers. Return generic errors and apply least database privilege.",
+      "reproduction_steps": [
+        "Probe id at GET http://127.0.0.1:41057/sql with the recorded bounded boolean expressions.",
+        "Repeat baseline, true, false and independent true-control requests; compare response digests and status."
+      ],
+      "location": {
+        "kind": "DAST",
+        "url": "http://127.0.0.1:41057/sql",
+        "method": "GET",
+        "parameter": "id",
+        "input_location": "query",
+        "file_path": null,
+        "line": null,
+        "pattern_id": null
+      },
+      "evidence": {
+        "request": {
+          "method": "GET",
+          "url": "http://127.0.0.1:41057/sql",
+          "parameter": "id",
+          "payload": "1 AND 1=1"
+        },
+        "response": {
+          "status": 500,
+          "excerpt": "SQLITE_ERROR"
+        },
+        "source": null,
+        "observations": [
+          "No data extraction performed.",
+          "Full response bodies are not persisted."
+        ],
+        "verification": {
+          "method": "boolean-differential",
+          "rounds": [
+            {
+              "true_payload": "1 AND 1=1",
+              "false_payload": "1 AND 1=2",
+              "control_payload": "1 AND 2=2",
+              "samples": [
+                {
+                  "baseline": [
+                    200,
+                    "341965b445c43093fec0098463c5d081c4f57c41c9811d86cabdb55b89382abf",
+                    17
+                  ],
+                  "true": [
+                    200,
+                    "341965b445c43093fec0098463c5d081c4f57c41c9811d86cabdb55b89382abf",
+                    17
+                  ],
+                  "false": [
+                    200,
+                    "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                    3
+                  ],
+                  "control": [
+                    200,
+                    "341965b445c43093fec0098463c5d081c4f57c41c9811d86cabdb55b89382abf",
+                    17
+                  ]
+                },
+                {
+                  "control": [
+                    200,
+                    "341965b445c43093fec0098463c5d081c4f57c41c9811d86cabdb55b89382abf",
+                    17
+                  ],
+                  "false": [
+                    200,
+                    "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                    3
+                  ],
+                  "true": [
+                    200,
+                    "341965b445c43093fec0098463c5d081c4f57c41c9811d86cabdb55b89382abf",
+                    17
+                  ],
+                  "baseline": [
+                    200,
+                    "341965b445c43093fec0098463c5d081c4f57c41c9811d86cabdb55b89382abf",
+                    17
+                  ]
+                },
+                {
+                  "baseline": [
+                    200,
+                    "341965b445c43093fec0098463c5d081c4f57c41c9811d86cabdb55b89382abf",
+                    17
+                  ],
+                  "true": [
+                    200,
+                    "341965b445c43093fec0098463c5d081c4f57c41c9811d86cabdb55b89382abf",
+                    17
+                  ],
+                  "false": [
+                    200,
+                    "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+                    3
+                  ],
+                  "control": [
+                    200,
+                    "341965b445c43093fec0098463c5d081c4f57c41c9811d86cabdb55b89382abf",
+                    17
+                  ]
+                }
+              ]
+            }
+          ],
+          "repetitions": 3,
+          "incomplete": null,
+          "signature_format": [
+            "status",
+            "sha256",
+            "normalized_length"
+          ]
+        }
+      },
+      "created_at": "2026-09-24T14:53:49.621Z"
+    },
+    {
+      "id": "b003dcb9-c49f-4baf-9aef-80c8c451e3f0",
+      "scan_id": "fc72092c-93ea-4e59-8747-c8c327a65fbf",
+      "check_id": "dast.sqli",
+      "title": "Database error indicator",
+      "severity": "high",
+      "confidence": "suspected",
+      "owasp": {
+        "edition": "2021",
+        "category": "A03:2021",
+        "name": "Injection"
+      },
+      "description": "Database error induced by a quote; manual review required. Error text alone does not confirm SQL injection.",
+      "remediation": "Use parameterized queries for all values; allowlist identifiers. Return generic errors and apply least database privilege.",
+      "reproduction_steps": [
+        "Probe q at GET http://127.0.0.1:41057/error-only with the recorded bounded boolean expressions.",
+        "Repeat baseline, true, false and independent true-control requests; compare response digests and status."
+      ],
+      "location": {
+        "kind": "DAST",
+        "url": "http://127.0.0.1:41057/error-only",
+        "method": "GET",
+        "parameter": "q",
+        "input_location": "query",
+        "file_path": null,
+        "line": null,
+        "pattern_id": null
+      },
+      "evidence": {
+        "request": {
+          "method": "GET",
+          "url": "http://127.0.0.1:41057/error-only",
+          "parameter": "q",
+          "payload": "hello'"
+        },
+        "response": {
+          "status": 500,
+          "excerpt": "SQLITE_ERROR"
+        },
+        "source": null,
+        "observations": [
+          "No data extraction performed.",
+          "Full response bodies are not persisted."
+        ],
+        "verification": {
+          "method": "error-indicator",
+          "rounds": [
+            {
+              "true_payload": "hello' AND 1=1-- ",
+              "false_payload": "hello' AND 1=2-- ",
+              "control_payload": "hello' AND 2=2-- ",
+              "samples": [
+                {
+                  "baseline": [
+                    200,
+                    "9f4aa7426803313eea0a14ef6061daf08186e70f2ad6d08763f18b7ea0245156",
+                    17
+                  ],
+                  "true": [
+                    500,
+                    "15128fc2c12e7bd706c922e25e508a82f85a25ac04f3904db4b15d9e0a52e101",
+                    49
+                  ],
+                  "false": [
+                    500,
+                    "15128fc2c12e7bd706c922e25e508a82f85a25ac04f3904db4b15d9e0a52e101",
+                    49
+                  ],
+                  "control": [
+                    500,
+                    "15128fc2c12e7bd706c922e25e508a82f85a25ac04f3904db4b15d9e0a52e101",
+                    49
+                  ]
+                }
+              ]
+            }
+          ],
+          "repetitions": 0,
+          "incomplete": null,
+          "signature_format": [
+            "status",
+            "sha256",
+            "normalized_length"
+          ]
+        }
+      },
+      "created_at": "2026-09-24T14:53:49.630Z"
+    },
+    {
+      "id": "94e6f982-16f0-4419-ac0b-f4a87eb9dd4f",
+      "scan_id": "fc72092c-93ea-4e59-8747-c8c327a65fbf",
+      "check_id": "dast.xss.reflected",
+      "title": "Reflected input indicator",
+      "severity": "medium",
+      "confidence": "suspected",
+      "owasp": {
+        "edition": "2021",
+        "category": "A03:2021",
+        "name": "Injection"
+      },
+      "description": "Browser did not observe probe execution.",
+      "remediation": "Apply context-aware output encoding and safe DOM APIs; avoid HTML insertion of untrusted input. Add a restrictive CSP as defense in depth.",
+      "reproduction_steps": [
+        "Supply the recorded payload in q using GET http://127.0.0.1:41057/escaped.",
+        "In an isolated browser, inspect whether the matching probe alert executes."
+      ],
+      "location": {
+        "kind": "DAST",
+        "url": "http://127.0.0.1:41057/escaped",
+        "method": "GET",
+        "parameter": "q",
+        "input_location": "query",
+        "file_path": null,
+        "line": null,
+        "pattern_id": null
+      },
+      "evidence": {
+        "request": {
+          "method": "GET",
+          "url": "http://127.0.0.1:41057/escaped",
+          "parameter": "q",
+          "payload": "\"><svg onload=alert(\"appsec_7316d0f17effab1e4c905e512a905fd9\")>"
+        },
+        "response": {
+          "status": 200,
+          "excerpt": "appsec_7316d0f17effab1e4c905e512a905fd9",
+          "media_type": "text/html; charset=utf-8"
+        },
+        "source": null,
+        "observations": [
+          "Unique probe marker was reflected.",
+          "Unescaped payload present: False",
+          "Browser did not observe probe execution."
+        ],
+        "verification": {
+          "method": "browser-dialog",
+          "probe_id": "appsec_7316d0f17effab1e4c905e512a905fd9",
+          "observed_probe_dialog": false,
+          "errors": []
+        }
+      },
+      "created_at": "2026-09-24T14:53:49.583Z"
+    }
+  ]
+}
