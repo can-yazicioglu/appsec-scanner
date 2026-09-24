@@ -92,6 +92,35 @@ are blocked. This changes browser transport behavior; streaming, client TLS,
 redirect-relative navigation and unusual cookie flows may differ from a normal
 browser. Scope is a hostname policy, not a DNS pinning/network firewall policy.
 
+## IDOR and DVWA (v0.3)
+
+See [target setup and coverage](docs/targets.md) for the pinned DVWA 2.5 Docker
+profile, database initialization, low-security settings and authenticated scan.
+
+The IDOR check accepts exactly two isolated accounts with explicit verified
+identities and an explicit list of resources. Each resource declares its owner,
+other account, expected other-account outcome (`deny` or `allow`), JSON identity
+fields and separate protected-content assertions. Owner access is checked first
+in each of two rounds. The non-owner must retrieve matching resource identity
+**and protected content** to confirm a denied access violation. Status alone,
+login HTML, failed owner baselines and intentionally shared access do not confirm
+IDOR. Read-only JSON GET resources only; no ID enumeration or write operations.
+Assertions must identify private content according to the application's actual
+policy; a public ID/name alone is insufficient.
+
+Run the controlled fixture in one terminal with `python -m tests.fixtures.lab`.
+In another, set the synthetic fixture values (these are not real credentials):
+
+```sh
+export FIXTURE_OWNER_SESSION=fixture-session-alice
+export FIXTURE_OTHER_SESSION=fixture-session-bob
+export FIXTURE_PRIVATE_VALUE=fixture-private-alice
+appsec scan --config examples/idor-fixture.json --output results/idor.json
+```
+
+Copy the example to ignored `local/` for your own authorized API. Credentials
+remain environment-backed; protected assertion values never appear in exports.
+
 ## Development
 
 ```sh

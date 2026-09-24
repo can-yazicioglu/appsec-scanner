@@ -21,7 +21,40 @@ services:
       - "127.0.0.1:5000:5000"
     command: ["dashboard", "--host", "0.0.0.0", "--port", "5000"]
     networks: [lab]
+  dvwa:
+    profiles: [dvwa]
+    build:
+      context: https://github.com/digininja/DVWA.git#a96943dc1f52f390ee5df72144660636c4b7dd06
+    environment:
+      DB_SERVER: dvwa-db
+      DB_DATABASE: dvwa
+      DB_USER: dvwa
+      DB_PASSWORD: ${DVWA_DB_PASSWORD:-local-lab-only}
+      DEFAULT_SECURITY_LEVEL: low
+    depends_on:
+      dvwa-db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:4280:80"
+    networks: [lab]
+  dvwa-db:
+    profiles: [dvwa]
+    image: mariadb:10.11
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DVWA_DB_ROOT_PASSWORD:-local-root-lab-only}
+      MARIADB_DATABASE: dvwa
+      MARIADB_USER: dvwa
+      MARIADB_PASSWORD: ${DVWA_DB_PASSWORD:-local-lab-only}
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - dvwa-data:/var/lib/mysql
+    networks: [lab]
 networks:
   lab:
 volumes:
   results:
+  dvwa-data:

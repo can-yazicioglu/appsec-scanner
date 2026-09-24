@@ -1,0 +1,11 @@
+{
+  "target": "http://127.0.0.1:4280/",
+  "allowed_hosts": ["127.0.0.1"],
+  "mode": "manual",
+  "verify_xss": true,
+  "checks": ["xss", "sqli"],
+  "endpoints": [
+    {"url": "http://127.0.0.1:4280/vulnerabilities/xss_r/?name=visitor"},
+    {"url": "http://127.0.0.1:4280/vulnerabilities/sqli/?id=1&Submit=Submit"}
+  ]
+}

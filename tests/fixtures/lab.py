@@ -12,6 +12,7 @@ from werkzeug.serving import make_server
 def create_lab():
     app = Flask(__name__)
     app.config["HITS"] = []
+    app.config["RESOURCE_USERS"] = []
 
     @app.before_request
     def count():
@@ -106,6 +107,7 @@ def create_lab():
 
     @app.get("/resource/<mode>/<int:item>")
     def resource(mode, item):
+        app.config["RESOURCE_USERS"].append(user())
         owner = "alice" if item == 1 else "bob"
         if not user():
             return jsonify(error="denied"), 401

@@ -54,6 +54,10 @@ class ScanConfig:
             from .auth import validate_auth
 
             validate_auth(scope, self.target, self.auth)
+        if "idor" in self.checks:
+            from .checks.idor import validate_idor
+
+            validate_idor(scope, self.target, self.idor)
         if self.mode == "manual" and not self.endpoints and "idor" not in self.checks:
             raise ValueError("Manual mode requires explicit endpoints")
         return scope

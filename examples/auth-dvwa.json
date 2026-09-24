@@ -1,0 +1,14 @@
+{
+  "cookies": {"security": "low"},
+  "login": {
+    "url": "http://127.0.0.1:4280/login.php",
+    "encoding": "form",
+    "fields": {"username": "${DVWA_USERNAME}", "password": "${DVWA_PASSWORD}", "Login": "Login"},
+    "csrf": {
+      "url": "http://127.0.0.1:4280/login.php",
+      "field": "user_token",
+      "selector": "input[name=user_token]"
+    }
+  },
+  "verify": {"url": "http://127.0.0.1:4280/index.php", "status": 200, "contains": "logout.php"}
+}

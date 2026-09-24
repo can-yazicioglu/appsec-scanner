@@ -55,3 +55,24 @@ a UI preview using clearly marked synthetic dashboard records, not target result
 Juice Shop v19.2.1 `routes/currentUser.ts` was inspected; whoami reads the token
 cookie, so the example sets `token_cookie` as well as bearer/local storage.
 Automated authentication against Docker Juice Shop remains unverified here.
+
+The integrated v0.2 checkpoint finished with **93 passed** and clean Ruff checks;
+`v0.2.0` and main were pushed successfully.
+
+## v0.3 checkpoint — 2026-09-24
+
+Targeted IDOR suite: **6 passed**. Live fixture requests alternated actual
+identities owner/non-owner/owner/non-owner. Tests distinguish confirmed protected
+content disclosure from 403 denial, 200 login HTML, failed owner baseline,
+intentional shared access, identical account identities and off-allowlist resource
+configuration (blocked before login).
+
+`python -m examples.generate_samples` produced a completed DAST scan with four
+findings and a completed IDOR scan with one confirmed fixture finding. These
+are actual loopback fixture runs, not Juice Shop or DVWA results. Protected
+values and account sessions are absent from exported evidence.
+
+DVWA **2.5**, commit `a96943dc1f52f390ee5df72144660636c4b7dd06`, was inspected for
+Docker/database config, CSRF login, low SQLi and low reflected XSS. The Compose
+profile builds that exact source commit. Docker build/startup and DVWA target
+authentication remain unverified because Docker is absent; see target docs.

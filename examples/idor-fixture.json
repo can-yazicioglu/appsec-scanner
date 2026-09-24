@@ -1,0 +1,22 @@
+{
+  "target": "http://127.0.0.1:8765",
+  "allowed_hosts": ["127.0.0.1"],
+  "mode": "manual",
+  "checks": ["idor"],
+  "idor": {
+    "accounts": {
+      "owner_account": {
+        "cookies": {"session": "${FIXTURE_OWNER_SESSION}"},
+        "verify": {"url": "http://127.0.0.1:8765/me", "json": {"user": "alice"}, "identity_path": "user"}
+      },
+      "other_account": {
+        "cookies": {"session": "${FIXTURE_OTHER_SESSION}"},
+        "verify": {"url": "http://127.0.0.1:8765/me", "json": {"user": "bob"}, "identity_path": "user"}
+      }
+    },
+    "resources": [
+      {"url": "http://127.0.0.1:8765/resource/vulnerable/1", "owner": "owner_account", "other": "other_account", "expected_other": "deny", "identity_match": {"id": 1, "owner": "alice"}, "protected_match": {"protected": "${FIXTURE_PRIVATE_VALUE}"}},
+      {"url": "http://127.0.0.1:8765/resource/secure/1", "owner": "owner_account", "other": "other_account", "expected_other": "deny", "identity_match": {"id": 1, "owner": "alice"}, "protected_match": {"protected": "${FIXTURE_PRIVATE_VALUE}"}}
+    ]
+  }
+}

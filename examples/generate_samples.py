@@ -9,6 +9,7 @@ from appsec.exporter import export_scan
 from appsec.repository import Repository
 from appsec.scanner import run_scan
 from tests.fixtures.lab import live_lab
+from tests.test_idor import idor_config
 
 
 def main():
@@ -30,6 +31,10 @@ def main():
         value = export_scan(repository, sid)
         write_json(value, Path("examples/sample-fixture-dast.json"))
         print(f"Controlled fixture DAST: {value['scan']['status']}; {len(value['findings'])} findings; {sid}")
+        sid = run_scan(idor_config(base), repository)
+        value = export_scan(repository, sid)
+        write_json(value, Path("examples/sample-fixture-idor.json"))
+        print(f"Controlled fixture IDOR: {value['scan']['status']}; {len(value['findings'])} finding; {sid}")
 
 
 if __name__ == "__main__":

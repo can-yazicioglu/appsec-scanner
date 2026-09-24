@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "exported_at": "2026-09-24T15:11:07.353Z",
+  "scan": {
+    "id": "4d87acaa-8168-464c-a2c1-3b831b7b3069",
+    "scope": "http://127.0.0.1:38803/",
+    "scan_type": "DAST",
+    "started_at": "2026-09-24T15:11:07.339Z",
+    "finished_at": "2026-09-24T15:11:07.352Z",
+    "status": "completed",
+    "errors": [],
+    "limitations": []
+  },
+  "filters": {
+    "severity": null,
+    "owasp_category": null,
+    "confidence": null,
+    "check_id": null
+  },
+  "findings": [
+    {
+      "id": "1867ebaf-3443-427c-a61b-9c86af3548c1",
+      "scan_id": "4d87acaa-8168-464c-a2c1-3b831b7b3069",
+      "check_id": "dast.idor.read",
+      "title": "Cross-account protected resource access",
+      "severity": "high",
+      "confidence": "confirmed",
+      "owasp": {
+        "edition": "2021",
+        "category": "A01:2021",
+        "name": "Broken Access Control"
+      },
+      "description": "The separately verified non-owner retrieved explicitly protected resource content.",
+      "remediation": "Enforce server-side object ownership/authorization for every resource read. Derive identity from the authenticated session, deny by default, and test both permitted and prohibited roles.",
+      "reproduction_steps": [
+        "Authenticate as the configured resource owner and verify identity and protected-field assertions.",
+        "In a separate authenticated non-owner session, request the same explicit GET resource twice.",
+        "Compare the configured protected fields; do not infer access from status alone."
+      ],
+      "location": {
+        "kind": "DAST",
+        "url": "http://127.0.0.1:38803/resource/vulnerable/1",
+        "method": "GET",
+        "parameter": null,
+        "input_location": null,
+        "file_path": null,
+        "line": null,
+        "pattern_id": null
+      },
+      "evidence": {
+        "request": {
+          "url": "http://127.0.0.1:38803/resource/vulnerable/1",
+          "method": "GET"
+        },
+        "response": {
+          "status": 200
+        },
+        "source": null,
+        "observations": [
+          "Expected owner: allowed; expected non-owner: denied.",
+          "Two independently verified account identities; separate cookie jars and headers.",
+          "Protected values are withheld; assertion outcomes are recorded."
+        ],
+        "verification": {
+          "method": "two-account-content-comparison",
+          "expected_other": "deny",
+          "identity_fields": [
+            "id",
+            "owner"
+          ],
+          "protected_fields": [
+            "protected"
+          ],
+          "rounds": [
+            {
+              "owner_status": 200,
+              "owner_matches": true,
+              "other_status": 200,
+              "other_identity_matches": true,
+              "other_protected_matches": true
+            },
+            {
+              "owner_status": 200,
+              "owner_matches": true,
+              "other_status": 200,
+              "other_identity_matches": true,
+              "other_protected_matches": true
+            }
+          ]
+        }
+      },
+      "created_at": "2026-09-24T15:11:07.350Z"
+    }
+  ]
+}
