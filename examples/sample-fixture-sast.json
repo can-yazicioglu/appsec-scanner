@@ -1,0 +1,298 @@
+{
+  "schema_version": 1,
+  "exported_at": "2026-09-24T15:18:50.719Z",
+  "scan": {
+    "id": "c79135ae-040c-47d4-a346-fbbabbc6589a",
+    "scope": "tests/fixtures/source",
+    "scan_type": "SAST",
+    "started_at": "2026-09-24T15:18:50.708Z",
+    "finished_at": "2026-09-24T15:18:50.718Z",
+    "status": "completed",
+    "errors": [],
+    "limitations": []
+  },
+  "filters": {
+    "severity": null,
+    "owasp_category": null,
+    "confidence": null,
+    "check_id": null
+  },
+  "findings": [
+    {
+      "id": "22638c17-0692-4b89-96bc-61074296a574",
+      "scan_id": "c79135ae-040c-47d4-a346-fbbabbc6589a",
+      "check_id": "sast.hardcoded-secret",
+      "title": "Possible hardcoded secret",
+      "severity": "high",
+      "confidence": "suspected",
+      "owasp": {
+        "edition": "2021",
+        "category": "A07:2021",
+        "name": "Identification and Authentication Failures"
+      },
+      "description": "A secret-like name has a literal value. Determine whether it is an active credential or a harmless fixture. Suspected indicator; manual review required. No data-flow analysis was performed.",
+      "remediation": "Remove active credentials from source, rotate any exposed value, and load secrets from an appropriate environment or secret store.",
+      "reproduction_steps": [
+        "Review insecure.js at line 2 without executing the source.",
+        "Trace data origin and usage manually; determine exploitability in the application's context."
+      ],
+      "location": {
+        "kind": "SAST",
+        "url": null,
+        "method": null,
+        "parameter": null,
+        "input_location": null,
+        "file_path": "insecure.js",
+        "line": 2,
+        "pattern_id": "hardcoded-secret"
+      },
+      "evidence": {
+        "request": null,
+        "response": null,
+        "source": "const serviceToken = \"[REDACTED]\";",
+        "observations": [
+          "A secret-like name has a literal value. Determine whether it is an active credential or a harmless fixture.",
+          "Quoted source literals are withheld from evidence."
+        ],
+        "verification": {
+          "method": "static-pattern",
+          "pattern_id": "hardcoded-secret",
+          "language": "javascript",
+          "executed": false,
+          "data_flow_analysis": false
+        }
+      },
+      "created_at": "2026-09-24T15:18:50.709Z"
+    },
+    {
+      "id": "a4fe2318-24d8-4cbb-91b6-9d876cebf1ac",
+      "scan_id": "c79135ae-040c-47d4-a346-fbbabbc6589a",
+      "check_id": "sast.sql-construction",
+      "title": "Dynamic SQL string construction",
+      "severity": "high",
+      "confidence": "suspected",
+      "owasp": {
+        "edition": "2021",
+        "category": "A03:2021",
+        "name": "Injection"
+      },
+      "description": "A SQL keyword occurs in a constructed string. Data origin and database execution are not proven. Suspected indicator; manual review required. No data-flow analysis was performed.",
+      "remediation": "Use bound query parameters for values and allowlist any dynamic identifiers.",
+      "reproduction_steps": [
+        "Review insecure.js at line 4 without executing the source.",
+        "Trace data origin and usage manually; determine exploitability in the application's context."
+      ],
+      "location": {
+        "kind": "SAST",
+        "url": null,
+        "method": null,
+        "parameter": null,
+        "input_location": null,
+        "file_path": "insecure.js",
+        "line": 4,
+        "pattern_id": "sql-construction"
+      },
+      "evidence": {
+        "request": null,
+        "response": null,
+        "source": "return \"[REDACTED]\" + userId;",
+        "observations": [
+          "A SQL keyword occurs in a constructed string. Data origin and database execution are not proven.",
+          "Quoted source literals are withheld from evidence."
+        ],
+        "verification": {
+          "method": "static-pattern",
+          "pattern_id": "sql-construction",
+          "language": "javascript",
+          "executed": false,
+          "data_flow_analysis": false
+        }
+      },
+      "created_at": "2026-09-24T15:18:50.711Z"
+    },
+    {
+      "id": "0eca7312-76a5-4102-954f-f977638bd390",
+      "scan_id": "c79135ae-040c-47d4-a346-fbbabbc6589a",
+      "check_id": "sast.eval",
+      "title": "Use of eval",
+      "severity": "high",
+      "confidence": "suspected",
+      "owasp": {
+        "edition": "2021",
+        "category": "A03:2021",
+        "name": "Injection"
+      },
+      "description": "An eval call may interpret executable input. Whether input is attacker-controlled requires manual review. Suspected indicator; manual review required. No data-flow analysis was performed.",
+      "remediation": "Replace eval with explicit parsing or a fixed allowlist of operations; do not execute untrusted text.",
+      "reproduction_steps": [
+        "Review insecure.js at line 7 without executing the source.",
+        "Trace data origin and usage manually; determine exploitability in the application's context."
+      ],
+      "location": {
+        "kind": "SAST",
+        "url": null,
+        "method": null,
+        "parameter": null,
+        "input_location": null,
+        "file_path": "insecure.js",
+        "line": 7,
+        "pattern_id": "eval"
+      },
+      "evidence": {
+        "request": null,
+        "response": null,
+        "source": "return eval(userInput);",
+        "observations": [
+          "An eval call may interpret executable input. Whether input is attacker-controlled requires manual review.",
+          "Quoted source literals are withheld from evidence."
+        ],
+        "verification": {
+          "method": "static-pattern",
+          "pattern_id": "eval",
+          "language": "javascript",
+          "executed": false,
+          "data_flow_analysis": false
+        }
+      },
+      "created_at": "2026-09-24T15:18:50.712Z"
+    },
+    {
+      "id": "2e7f39ce-f9ab-4b6d-ae98-28e1df867a67",
+      "scan_id": "c79135ae-040c-47d4-a346-fbbabbc6589a",
+      "check_id": "sast.hardcoded-secret",
+      "title": "Possible hardcoded secret",
+      "severity": "high",
+      "confidence": "suspected",
+      "owasp": {
+        "edition": "2021",
+        "category": "A07:2021",
+        "name": "Identification and Authentication Failures"
+      },
+      "description": "A secret-like name has a literal value. Determine whether it is an active credential or a harmless fixture. Suspected indicator; manual review required. No data-flow analysis was performed.",
+      "remediation": "Remove active credentials from source, rotate any exposed value, and load secrets from an appropriate environment or secret store.",
+      "reproduction_steps": [
+        "Review insecure.py at line 2 without executing the source.",
+        "Trace data origin and usage manually; determine exploitability in the application's context."
+      ],
+      "location": {
+        "kind": "SAST",
+        "url": null,
+        "method": null,
+        "parameter": null,
+        "input_location": null,
+        "file_path": "insecure.py",
+        "line": 2,
+        "pattern_id": "hardcoded-secret"
+      },
+      "evidence": {
+        "request": null,
+        "response": null,
+        "source": "DEMO_API_KEY = \"[REDACTED]\"",
+        "observations": [
+          "A secret-like name has a literal value. Determine whether it is an active credential or a harmless fixture.",
+          "Quoted source literals are withheld from evidence."
+        ],
+        "verification": {
+          "method": "static-pattern",
+          "pattern_id": "hardcoded-secret",
+          "language": "python",
+          "executed": false,
+          "data_flow_analysis": false
+        }
+      },
+      "created_at": "2026-09-24T15:18:50.714Z"
+    },
+    {
+      "id": "12c1fd10-2305-4e19-bb36-e4f253914466",
+      "scan_id": "c79135ae-040c-47d4-a346-fbbabbc6589a",
+      "check_id": "sast.sql-construction",
+      "title": "Dynamic SQL string construction",
+      "severity": "high",
+      "confidence": "suspected",
+      "owasp": {
+        "edition": "2021",
+        "category": "A03:2021",
+        "name": "Injection"
+      },
+      "description": "A SQL keyword occurs in a constructed string. Data origin and database execution are not proven. Suspected indicator; manual review required. No data-flow analysis was performed.",
+      "remediation": "Use bound query parameters for values and allowlist any dynamic identifiers.",
+      "reproduction_steps": [
+        "Review insecure.py at line 6 without executing the source.",
+        "Trace data origin and usage manually; determine exploitability in the application's context."
+      ],
+      "location": {
+        "kind": "SAST",
+        "url": null,
+        "method": null,
+        "parameter": null,
+        "input_location": null,
+        "file_path": "insecure.py",
+        "line": 6,
+        "pattern_id": "sql-construction"
+      },
+      "evidence": {
+        "request": null,
+        "response": null,
+        "source": "query = \"[REDACTED]\"",
+        "observations": [
+          "A SQL keyword occurs in a constructed string. Data origin and database execution are not proven.",
+          "Quoted source literals are withheld from evidence."
+        ],
+        "verification": {
+          "method": "static-pattern",
+          "pattern_id": "sql-construction",
+          "language": "python",
+          "executed": false,
+          "data_flow_analysis": false
+        }
+      },
+      "created_at": "2026-09-24T15:18:50.716Z"
+    },
+    {
+      "id": "53dc01cf-a90f-49d7-8ed5-999c91b5b4c2",
+      "scan_id": "c79135ae-040c-47d4-a346-fbbabbc6589a",
+      "check_id": "sast.eval",
+      "title": "Use of eval",
+      "severity": "high",
+      "confidence": "suspected",
+      "owasp": {
+        "edition": "2021",
+        "category": "A03:2021",
+        "name": "Injection"
+      },
+      "description": "An eval call may interpret executable input. Whether input is attacker-controlled requires manual review. Suspected indicator; manual review required. No data-flow analysis was performed.",
+      "remediation": "Replace eval with explicit parsing or a fixed allowlist of operations; do not execute untrusted text.",
+      "reproduction_steps": [
+        "Review insecure.py at line 11 without executing the source.",
+        "Trace data origin and usage manually; determine exploitability in the application's context."
+      ],
+      "location": {
+        "kind": "SAST",
+        "url": null,
+        "method": null,
+        "parameter": null,
+        "input_location": null,
+        "file_path": "insecure.py",
+        "line": 11,
+        "pattern_id": "eval"
+      },
+      "evidence": {
+        "request": null,
+        "response": null,
+        "source": "return eval(user_input)",
+        "observations": [
+          "An eval call may interpret executable input. Whether input is attacker-controlled requires manual review.",
+          "Quoted source literals are withheld from evidence."
+        ],
+        "verification": {
+          "method": "static-pattern",
+          "pattern_id": "eval",
+          "language": "python",
+          "executed": false,
+          "data_flow_analysis": false
+        }
+      },
+      "created_at": "2026-09-24T15:18:50.717Z"
+    }
+  ]
+}

@@ -11,7 +11,7 @@ services:
       - results:/data
       - ./examples:/examples:ro
     networks: [lab]
-    command: ["scan", "http://juice-shop:3000", "--allow-host", "juice-shop", "--spa", "--endpoint", "http://juice-shop:3000/rest/products/search?q=apple"]
+    command: ["scan", "http://juice-shop:3000", "--allow-host", "juice-shop", "--spa", "--max-response-bytes", "8000000", "--endpoint", "http://juice-shop:3000/rest/products/search?q=apple"]
   dashboard:
     build: .
     profiles: [tools]

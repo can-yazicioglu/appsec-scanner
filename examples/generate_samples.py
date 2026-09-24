@@ -7,6 +7,7 @@ from appsec.cli import write_json
 from appsec.config import ScanConfig
 from appsec.exporter import export_scan
 from appsec.repository import Repository
+from appsec.sast import run_source_scan
 from appsec.scanner import run_scan
 from tests.fixtures.lab import live_lab
 from tests.test_idor import idor_config
@@ -35,6 +36,10 @@ def main():
         value = export_scan(repository, sid)
         write_json(value, Path("examples/sample-fixture-idor.json"))
         print(f"Controlled fixture IDOR: {value['scan']['status']}; {len(value['findings'])} finding; {sid}")
+        sid = run_source_scan("tests/fixtures/source", repository)
+        value = export_scan(repository, sid)
+        write_json(value, Path("examples/sample-fixture-sast.json"))
+        print(f"Controlled fixture SAST: {value['scan']['status']}; {len(value['findings'])} findings; {sid}")
 
 
 if __name__ == "__main__":

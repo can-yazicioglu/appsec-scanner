@@ -60,6 +60,24 @@ def test_supplied_cookie_and_bearer(lab):
             client.close()
 
 
+def test_auth_secrets_redacted_before_scope_is_persisted(lab):
+    from appsec.config import ScanConfig
+    from appsec.repository import Repository
+    from appsec.scanner import run_scan
+
+    config = ScanConfig(
+        lab[0] + "/?q=fixture-password",
+        ["127.0.0.1"],
+        mode="manual",
+        endpoints=[{"url": lab[0] + "/safe?q=hello"}],
+        checks=["xss"],
+        auth=auth_config(lab[0]),
+    )
+    with Repository(":memory:") as repo:
+        sid = run_scan(config, repo)
+        assert "fixture-password" not in json.dumps(repo.get_scan(sid))
+
+
 def test_auth_unapproved_url_fails_before_request(lab, client):
     base, app = lab
     config = auth_config(base)

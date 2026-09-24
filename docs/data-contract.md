@@ -44,7 +44,7 @@ applicable. Verification records probe identity, repeated observations and
 limitations; reflection/database errors alone cannot establish confirmation.
 
 Timestamps are UTC ISO 8601 with milliseconds and trailing `Z`.
-Finding identity is scan + check + normalized location; repeated probes merge,
+Finding identity is scan + check + normalized, redacted location; repeated probes merge,
 preserve original ID/time and never downgrade confirmed to suspected. Different
 scans retain independent findings. Fingerprint is not exported.
 

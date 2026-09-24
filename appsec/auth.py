@@ -29,6 +29,19 @@ def json_path(value, path):
     return value
 
 
+def register_auth_secrets(redactor, config):
+    config = resolve_env(config)
+    for group in (
+        config.get("headers", {}),
+        config.get("cookies", {}),
+        config.get("local_storage", {}),
+        (config.get("login") or {}).get("fields", {}),
+    ):
+        for value in group.values():
+            redactor.register(value)
+    redactor.register(config.get("bearer_token"))
+
+
 def validate_auth(scope, target, config):
     for section in (config.get("login"), config.get("verify"), (config.get("login") or {}).get("csrf")):
         if section:

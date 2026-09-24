@@ -3,7 +3,7 @@
 A local portfolio project that distinguishes confirmed vulnerabilities from
 indicators requiring manual review. Python, requests, BeautifulSoup, optional
 Playwright, SQLite and a read-only Flask dashboard. Built incrementally through
-v0.1–v0.4; see `docs/verification.md` for evidence as milestones are completed.
+v0.1–v0.4; see [verification results](docs/verification.md) for commands and observed results.
 
 [Architecture](docs/architecture.md) · [Data contract](docs/data-contract.md) ·
 [Dashboard](docs/dashboard.md) · [Actual fixture sample](examples/sample-fixture-dast.json)
@@ -37,8 +37,11 @@ does not certify an application secure. Inspect errors and limitations.
 
 Defaults: 20 pages, depth 3, 40 endpoints, 8 parameters per endpoint, 400 total
 requests, 180-second scan budget, 5-second per-request timeout, 1 MB response
-limit, 5 redirects, 500 ms SPA settle time. Budgets include verification and
+limit (the Juice Shop example allows 8 MB for SPA assets), 5 redirects, 500 ms SPA settle time. Budgets include verification and
 authentication. No brute-force resource enumeration or data extraction.
+The wall-clock budget is cooperative; see [architecture](docs/architecture.md).
+`--max-response-bytes` can adjust body limits up to 20 MB. `--allow-post` gates
+injected POST probes; SPA application scripts can make ordinary POST requests.
 
 ## Evidence and mappings
 
@@ -120,6 +123,43 @@ appsec scan --config examples/idor-fixture.json --output results/idor.json
 
 Copy the example to ignored `local/` for your own authorized API. Credentials
 remain environment-backed; protected assertion values never appear in exports.
+
+## Local source scanning (v0.4)
+
+```sh
+appsec source-scan /path/to/authorized/source --output results/source.json
+appsec source-scan tests/fixtures/source --output results/source-fixture.json
+appsec --db results/appsec.db dashboard
+```
+
+Python uses the standard-library AST; JavaScript uses lightweight lexical and
+pattern checks. Rules flag constructed SQL strings, direct `eval` calls and
+literal values assigned to secret-like names. Every result is **suspected** and
+requires manual review. No taint/data-flow analysis, dependency audit, full
+JavaScript syntax validation or exploitability proof is claimed. Indirect calls,
+obfuscation, unusual syntax and cross-file flows can be missed; fixtures and
+constant expressions may be false positives. Source is never imported/executed.
+
+Locations are source-relative paths and one-based lines. Quoted source literals
+are masked before evidence is stored, including multiline literals. Symlinks
+are skipped; `.git`, `.venv`, `venv`, `node_modules`, build directories and Python
+caches are excluded. Default bounds: 500 files, 1 MB/file, 10 MB total; CLI flags
+can adjust them. Supported extensions: `.py`, `.js`, `.mjs`, `.cjs`. Parse/read
+errors and reached limits produce failed/partial status. UTF-8 source only.
+
+## Reproduce the portfolio demo
+
+```sh
+python -m examples.generate_samples
+appsec --db results/fixture-demo.db dashboard
+```
+
+The generator starts an ephemeral loopback fixture, makes actual DAST/IDOR
+requests, runs Chromium execution verification, scans the source fixtures, and
+writes three clearly named JSON samples under `examples/`. It also leaves results
+in `results/fixture-demo.db` for the dashboard. The checked-in samples demonstrate
+four DAST findings (two confirmed, two suspected), one confirmed fixture IDOR
+finding, and six suspected SAST findings. They are **not Juice Shop/DVWA results**.
 
 ## Development
 

@@ -4,6 +4,7 @@
   "mode": "spa",
   "max_pages": 10,
   "max_requests": 400,
+  "max_response_bytes": 8000000,
   "verify_xss": true,
   "endpoints": [{"url": "http://127.0.0.1:3000/rest/products/search?q=apple"}]
 }

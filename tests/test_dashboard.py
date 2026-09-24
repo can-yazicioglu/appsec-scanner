@@ -9,6 +9,7 @@ import re
 import sqlite3
 
 import pytest
+from bs4 import BeautifulSoup
 
 from appsec import cli
 from appsec.dashboard import create_app
@@ -152,6 +153,48 @@ def test_idor_detail_shows_expected_and_observed_access_with_redacted_credential
     ]
     assert '<mark class="redacted">[REDACTED]</mark>' in html
     assert '<span class="kind">GET</span> <code class="url">http://localhost:3000/rest/basket/2</code>' in html
+
+
+@pytest.mark.parametrize("case", [
+    "different_method", "unknown_expectation", "null_rounds", "object_rounds", "empty_rounds",
+    "null_second_round", "missing_assertion", "null_assertion", "string_assertion", "integer_assertion",
+    "null_status", "boolean_status",
+])
+def test_incomplete_idor_comparison_preserves_generic_evidence(client, store, case):
+    path, ids = store
+    with Repository(path) as repo:
+        finding = repo.get_finding(ids["idor"])
+        verification = finding["evidence"]["verification"]
+        if case == "different_method":
+            verification["method"] = "some-other-comparison"
+        elif case == "unknown_expectation":
+            verification["expected_other"] = None
+        elif case == "null_rounds":
+            verification["rounds"] = None
+        elif case == "object_rounds":
+            verification["rounds"] = {"unexpected": "shape"}
+        elif case == "empty_rounds":
+            verification["rounds"] = []
+        elif case == "null_second_round":
+            verification["rounds"][1] = None
+        elif case == "missing_assertion":
+            del verification["rounds"][1]["other_protected_matches"]
+        elif case in ("null_assertion", "string_assertion", "integer_assertion"):
+            verification["rounds"][1]["other_protected_matches"] = {
+                "null_assertion": None, "string_assertion": "false", "integer_assertion": 0,
+            }[case]
+        else:
+            verification["rounds"][1]["other_status"] = None if case == "null_status" else True
+        repo.add_finding(ids["dast"], finding)
+
+    html = page(client, f"/findings/{ids['idor']}")
+    assert "Expected vs observed access" not in html
+    assert 'class="facts access-comparison"' not in html
+    assert "protected content not returned" not in html
+    soup = BeautifulSoup(html, "html.parser")
+    cell = soup.find("th", string="rounds").parent.find("td")
+    value = cell.find("pre") or cell
+    assert json.loads(value.get_text(strip=True)) == verification["rounds"]
 
 
 def test_sast_findings_show_file_line_rule_and_manual_review(client, store):

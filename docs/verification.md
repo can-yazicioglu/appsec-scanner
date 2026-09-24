@@ -67,6 +67,8 @@ content disclosure from 403 denial, 200 login HTML, failed owner baseline,
 intentional shared access, identical account identities and off-allowlist resource
 configuration (blocked before login).
 
+Integrated v0.3 suite: **102 passed**, Ruff clean. Main and `v0.3.0` pushed.
+
 `python -m examples.generate_samples` produced a completed DAST scan with four
 findings and a completed IDOR scan with one confirmed fixture finding. These
 are actual loopback fixture runs, not Juice Shop or DVWA results. Protected
@@ -76,3 +78,59 @@ DVWA **2.5**, commit `a96943dc1f52f390ee5df72144660636c4b7dd06`, was inspected f
 Docker/database config, CSRF login, low SQLi and low reflected XSS. The Compose
 profile builds that exact source commit. Docker build/startup and DVWA target
 authentication remain unverified because Docker is absent; see target docs.
+
+## v0.4 checkpoint — 2026-09-24
+
+Final integrated run: `.venv/bin/python -m pytest -q` → **126 passed** (real
+Chromium tests included, no skipped browser suite). `.venv/bin/ruff check appsec
+tests examples` → clean. `git diff --check` → clean. `pip check` → no broken
+requirements. Local Python: 3.14.4; GitHub Actions uses Python 3.12.
+
+SAST checks cover Python and JavaScript SQL construction, eval and hardcoded
+secrets; all findings remain suspected. Tests prove no source execution,
+source-relative locations, symlink exclusion, source bounds, parse failures,
+multiline/same-line secret masking, and CLI/dashboard export consistency.
+Additional final regressions cover credential redaction before scope storage,
+session/auth URL redaction, structural enums that happen to equal a secret,
+response body limits and interrupted-scan status.
+
+`python -m examples.generate_samples` generated actual completed fixture runs:
+
+| Sample | Findings | Confidence |
+| --- | ---: | --- |
+| `sample-fixture-dast.json` | 4 | 2 confirmed, 2 suspected |
+| `sample-fixture-idor.json` | 1 | confirmed |
+| `sample-fixture-sast.json` | 6 | all suspected |
+
+`pip wheel --no-deps --wheel-dir /tmp/appsec-wheel .` built
+`appsec_scanner-0.4.0-py3-none-any.whl`. Installed that wheel and runtime
+dependencies in a separate clean virtual environment, ran from `/tmp` rather
+than the source checkout, scanned the source fixture through the installed
+`appsec` entry point, and requested history/scan/finding/CSS routes through the
+installed Flask package. All passed; six suspected source findings persisted.
+This verifies that templates/static files are packaged and Playwright remains
+optional for source/static use.
+
+GitHub Actions runs for pushed v0.2/v0.3 commits were observed **successful**;
+the final v0.4 run is checked after publication. CI intentionally scans fixtures,
+not third-party targets. Docker Compose startup, the scanner image build, and
+live Juice Shop/DVWA scans remain **unverified locally**. The inspected versions,
+setup, target-specific gaps and fixture distinction are documented in
+`docs/targets.md` and README. No target findings were fabricated.
+
+## Remaining scope limits
+
+* Exact hostname allowlist, not DNS/IP pinning or an OS firewall. Redirects are
+  limited and cross-origin redirects are blocked. Browser HTTP is proxied through
+  the same scoped client; its transport differs from a normal browser.
+* Bounded GET/query and opt-in POST form/flat-JSON probing; no complete SPA state
+  exploration, multipart/nested-input mutation, or DOM-only XSS confirmation.
+* SQLi confirmation uses conservative repeatable boolean comparisons only;
+  dynamic responses and unsupported query contexts can cause false negatives.
+* IDOR requires truthful ownership/private-content assertions and separately
+  verified accounts; supports JSON reads, not writes or automatic enumeration.
+* SAST is lightweight pattern review, not full parsing for JavaScript, data flow,
+  dependency scanning or proof of exploitability. Redaction minimizes evidence,
+  not a general DLP guarantee.
+* Dashboard is a local read-only companion, without user accounts or scan launch.
+  PortSwigger integration is deferred beyond v0.4.

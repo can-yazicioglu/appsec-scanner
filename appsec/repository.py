@@ -100,10 +100,16 @@ class Repository:
 
     def add_finding(self, scan_id, finding):
         data = normalize_finding(finding)
-        identity = fingerprint(data)
         if data["location"]["url"]:
             data["location"]["url"] = self.redactor.url(data["location"]["url"])
-        data = self.redactor.clean(data)
+        # Redact content without corrupting UUIDs/enums/timestamps when a secret
+        # happens to equal a structural value such as "high" or "confirmed".
+        for key in ("title", "description", "remediation", "reproduction_steps", "evidence"):
+            data[key] = self.redactor.clean(data[key])
+        for key in ("file_path", "parameter"):
+            if data["location"][key]:
+                data["location"][key] = self.redactor.text(data["location"][key])
+        identity = fingerprint(data)
         data["scan_id"] = scan_id
         data["fingerprint"] = identity
         old = self.db.execute(

@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "exported_at": "2026-09-24T15:11:07.338Z",
+  "exported_at": "2026-09-24T15:18:50.694Z",
   "scan": {
-    "id": "e2f9f5cb-16fd-421a-88b8-4ec9e2618315",
-    "scope": "http://127.0.0.1:38803/",
+    "id": "48c96b69-b0c8-43aa-b1d2-756f7635b294",
+    "scope": "http://127.0.0.1:36577/",
     "scan_type": "DAST",
-    "started_at": "2026-09-24T15:11:05.662Z",
-    "finished_at": "2026-09-24T15:11:07.337Z",
+    "started_at": "2026-09-24T15:18:49.060Z",
+    "finished_at": "2026-09-24T15:18:50.693Z",
     "status": "completed",
     "errors": [],
     "limitations": []
@@ -19,8 +19,8 @@
   },
   "findings": [
     {
-      "id": "2473bf16-a3cc-42ba-a834-6294d397996a",
-      "scan_id": "e2f9f5cb-16fd-421a-88b8-4ec9e2618315",
+      "id": "797ba404-76e1-4e2f-9302-7f80f418ea8a",
+      "scan_id": "48c96b69-b0c8-43aa-b1d2-756f7635b294",
       "check_id": "dast.xss.reflected",
       "title": "Reflected cross-site scripting",
       "severity": "high",
@@ -33,12 +33,12 @@
       "description": "Browser observed this probe's unique alert.",
       "remediation": "Apply context-aware output encoding and safe DOM APIs; avoid HTML insertion of untrusted input. Add a restrictive CSP as defense in depth.",
       "reproduction_steps": [
-        "Supply the recorded payload in q using GET http://127.0.0.1:38803/xss.",
+        "Supply the recorded payload in q using GET http://127.0.0.1:36577/xss.",
         "In an isolated browser, inspect whether the matching probe alert executes."
       ],
       "location": {
         "kind": "DAST",
-        "url": "http://127.0.0.1:38803/xss",
+        "url": "http://127.0.0.1:36577/xss",
         "method": "GET",
         "parameter": "q",
         "input_location": "query",
@@ -49,13 +49,13 @@
       "evidence": {
         "request": {
           "method": "GET",
-          "url": "http://127.0.0.1:38803/xss",
+          "url": "http://127.0.0.1:36577/xss",
           "parameter": "q",
-          "payload": "\"><svg onload=alert(\"appsec_7ee59ebf1c704df699146d5aa8aff0ec\")>"
+          "payload": "\"><svg onload=alert(\"appsec_3d183121d83f70834e998e647d3885c9\")>"
         },
         "response": {
           "status": 200,
-          "excerpt": "\"><svg onload=alert(\"appsec_7ee59ebf1c704df699146d5aa8aff0ec\")>",
+          "excerpt": "\"><svg onload=alert(\"appsec_3d183121d83f70834e998e647d3885c9\")>",
           "media_type": "text/html; charset=utf-8"
         },
         "source": null,
@@ -66,16 +66,16 @@
         ],
         "verification": {
           "method": "browser-dialog",
-          "probe_id": "appsec_7ee59ebf1c704df699146d5aa8aff0ec",
+          "probe_id": "appsec_3d183121d83f70834e998e647d3885c9",
           "observed_probe_dialog": true,
           "errors": []
         }
       },
-      "created_at": "2026-09-24T15:11:06.466Z"
+      "created_at": "2026-09-24T15:18:49.876Z"
     },
     {
-      "id": "b4da80b6-1e49-4d86-8bc5-afebc6c11fae",
-      "scan_id": "e2f9f5cb-16fd-421a-88b8-4ec9e2618315",
+      "id": "e9c30ae2-a94f-46c6-a414-3af71c833639",
+      "scan_id": "48c96b69-b0c8-43aa-b1d2-756f7635b294",
       "check_id": "dast.sqli",
       "title": "SQL injection",
       "severity": "high",
@@ -88,12 +88,12 @@
       "description": "Three repeated boolean differentials matched stable baseline and independent true control.",
       "remediation": "Use parameterized queries for all values; allowlist identifiers. Return generic errors and apply least database privilege.",
       "reproduction_steps": [
-        "Probe id at GET http://127.0.0.1:38803/sql with the recorded bounded boolean expressions.",
+        "Probe id at GET http://127.0.0.1:36577/sql with the recorded bounded boolean expressions.",
         "Repeat baseline, true, false and independent true-control requests; compare response digests and status."
       ],
       "location": {
         "kind": "DAST",
-        "url": "http://127.0.0.1:38803/sql",
+        "url": "http://127.0.0.1:36577/sql",
         "method": "GET",
         "parameter": "id",
         "input_location": "query",
@@ -104,7 +104,7 @@
       "evidence": {
         "request": {
           "method": "GET",
-          "url": "http://127.0.0.1:38803/sql",
+          "url": "http://127.0.0.1:36577/sql",
           "parameter": "id",
           "payload": "1 AND 1=1"
         },
@@ -203,11 +203,11 @@
           ]
         }
       },
-      "created_at": "2026-09-24T15:11:07.324Z"
+      "created_at": "2026-09-24T15:18:50.682Z"
     },
     {
-      "id": "613e7111-3999-4ea7-a890-3378a970f164",
-      "scan_id": "e2f9f5cb-16fd-421a-88b8-4ec9e2618315",
+      "id": "66236853-e82d-40aa-8093-d0c9f6e5c68d",
+      "scan_id": "48c96b69-b0c8-43aa-b1d2-756f7635b294",
       "check_id": "dast.sqli",
       "title": "Database error indicator",
       "severity": "high",
@@ -220,12 +220,12 @@
       "description": "Database error induced by a quote; manual review required. Error text alone does not confirm SQL injection.",
       "remediation": "Use parameterized queries for all values; allowlist identifiers. Return generic errors and apply least database privilege.",
       "reproduction_steps": [
-        "Probe q at GET http://127.0.0.1:38803/error-only with the recorded bounded boolean expressions.",
+        "Probe q at GET http://127.0.0.1:36577/error-only with the recorded bounded boolean expressions.",
         "Repeat baseline, true, false and independent true-control requests; compare response digests and status."
       ],
       "location": {
         "kind": "DAST",
-        "url": "http://127.0.0.1:38803/error-only",
+        "url": "http://127.0.0.1:36577/error-only",
         "method": "GET",
         "parameter": "q",
         "input_location": "query",
@@ -236,7 +236,7 @@
       "evidence": {
         "request": {
           "method": "GET",
-          "url": "http://127.0.0.1:38803/error-only",
+          "url": "http://127.0.0.1:36577/error-only",
           "parameter": "q",
           "payload": "hello'"
         },
@@ -291,11 +291,11 @@
           ]
         }
       },
-      "created_at": "2026-09-24T15:11:07.334Z"
+      "created_at": "2026-09-24T15:18:50.691Z"
     },
     {
-      "id": "283ee8c2-7bdb-4b0c-979e-a93ae9b60c59",
-      "scan_id": "e2f9f5cb-16fd-421a-88b8-4ec9e2618315",
+      "id": "eb7ba62c-e212-4dd0-8c77-44e8cde948d6",
+      "scan_id": "48c96b69-b0c8-43aa-b1d2-756f7635b294",
       "check_id": "dast.xss.reflected",
       "title": "Reflected input indicator",
       "severity": "medium",
@@ -308,12 +308,12 @@
       "description": "Browser did not observe probe execution.",
       "remediation": "Apply context-aware output encoding and safe DOM APIs; avoid HTML insertion of untrusted input. Add a restrictive CSP as defense in depth.",
       "reproduction_steps": [
-        "Supply the recorded payload in q using GET http://127.0.0.1:38803/escaped.",
+        "Supply the recorded payload in q using GET http://127.0.0.1:36577/escaped.",
         "In an isolated browser, inspect whether the matching probe alert executes."
       ],
       "location": {
         "kind": "DAST",
-        "url": "http://127.0.0.1:38803/escaped",
+        "url": "http://127.0.0.1:36577/escaped",
         "method": "GET",
         "parameter": "q",
         "input_location": "query",
@@ -324,13 +324,13 @@
       "evidence": {
         "request": {
           "method": "GET",
-          "url": "http://127.0.0.1:38803/escaped",
+          "url": "http://127.0.0.1:36577/escaped",
           "parameter": "q",
-          "payload": "\"><svg onload=alert(\"appsec_eaddab5983c958922dada26883ee771a\")>"
+          "payload": "\"><svg onload=alert(\"appsec_4e055712584519ce7cd1e6150be6acbb\")>"
         },
         "response": {
           "status": 200,
-          "excerpt": "appsec_eaddab5983c958922dada26883ee771a",
+          "excerpt": "appsec_4e055712584519ce7cd1e6150be6acbb",
           "media_type": "text/html; charset=utf-8"
         },
         "source": null,
@@ -341,12 +341,12 @@
         ],
         "verification": {
           "method": "browser-dialog",
-          "probe_id": "appsec_eaddab5983c958922dada26883ee771a",
+          "probe_id": "appsec_4e055712584519ce7cd1e6150be6acbb",
           "observed_probe_dialog": false,
           "errors": []
         }
       },
-      "created_at": "2026-09-24T15:11:07.296Z"
+      "created_at": "2026-09-24T15:18:50.656Z"
     }
   ]
 }

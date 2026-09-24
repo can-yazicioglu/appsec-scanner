@@ -41,6 +41,7 @@ def parser():
         "max-endpoints",
         "max-parameters",
         "max-requests",
+        "max-response-bytes",
         "browser-wait-ms",
     ):
         scan.add_argument("--" + name, type=int)
@@ -51,6 +52,14 @@ def parser():
     export.add_argument("scan_id")
     export.add_argument("--output")
     commands.add_parser("scans", help="List recent scans")
+    source = commands.add_parser(
+        "source-scan", help="Review explicit local Python/JavaScript source without executing it"
+    )
+    source.add_argument("source")
+    source.add_argument("--max-files", type=int, default=500)
+    source.add_argument("--max-file-bytes", type=int, default=1_000_000)
+    source.add_argument("--max-total-bytes", type=int, default=10_000_000)
+    source.add_argument("--output")
     dashboard = commands.add_parser("dashboard", help="Serve the read-only local dashboard")
     dashboard.add_argument("--host", default="127.0.0.1")
     dashboard.add_argument("--port", type=int, default=5000)
@@ -66,6 +75,29 @@ def main(argv=None):
             create_app(args.db).run(host=args.host, port=args.port, debug=False)
             return 0
         with Repository(args.db) as repository:
+            if args.command == "source-scan":
+                from .sast import run_source_scan
+
+                scan_id = run_source_scan(
+                    args.source,
+                    repository,
+                    max_files=args.max_files,
+                    max_file_bytes=args.max_file_bytes,
+                    max_total_bytes=args.max_total_bytes,
+                )
+                if args.output:
+                    write_json(export_scan(repository, scan_id), args.output)
+                scan = repository.get_scan(scan_id)
+                print(
+                    json.dumps(
+                        {
+                            "scan_id": scan_id,
+                            "status": scan["status"],
+                            "findings": len(repository.list_findings(scan_id)),
+                        }
+                    )
+                )
+                return 0 if scan["status"] == "completed" else 2
             if args.command == "scan":
                 values = load_json(args.config) if args.config else {}
                 for key in ScanConfig.__dataclass_fields__:

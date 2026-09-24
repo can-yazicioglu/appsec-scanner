@@ -58,7 +58,11 @@ def check_idor(scan_config, parent):
             session = stack.enter_context(
                 closing(
                     SafeSession(
-                        parent.scope, timeout=parent.timeout, budget=parent.budget, redactor=parent.redactor
+                        parent.scope,
+                        timeout=parent.timeout,
+                        budget=parent.budget,
+                        redactor=parent.redactor,
+                        max_bytes=parent.max_bytes,
                     )
                 )
             )

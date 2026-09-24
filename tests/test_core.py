@@ -46,6 +46,31 @@ def test_repository_redacts_merges_filters_survives_restart(tmp_path):
             repo.list_findings(sid, confidence="certain")
 
 
+def test_redaction_preserves_structural_enums_and_masks_session_urls():
+    with Repository(":memory:", Redactor(["confirmed", "high", "a"])) as repo:
+        sid = repo.start_scan("http://localhost/?sessionid=sensitive-session&auth=sensitive-auth", "DAST")
+        value = sample()
+        value.update(confidence="confirmed", severity="high")
+        fid = repo.add_finding(sid, value)
+        assert repo.get_finding(fid)["confidence"] == "confirmed"
+        assert repo.get_finding(fid)["severity"] == "high"
+        assert "sensitive-" not in repo.get_scan(sid)["scope"]
+
+
+def test_interrupted_scan_is_not_completed(monkeypatch):
+    from appsec.config import ScanConfig
+    from appsec.scanner import run_scan
+
+    def interrupt(*args, **kwargs):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr("appsec.scanner.static_discover", interrupt)
+    with Repository(":memory:") as repo:
+        sid = run_scan(ScanConfig("http://127.0.0.1", ["127.0.0.1"]), repo)
+        assert repo.get_scan(sid)["status"] == "failed"
+        assert repo.get_scan(sid)["errors"] == ["Scan interrupted by operator."]
+
+
 def test_static_links_forms_and_dedup(lab, client):
     endpoints, errors, _ = static_discover(client, lab[0])
     assert not errors

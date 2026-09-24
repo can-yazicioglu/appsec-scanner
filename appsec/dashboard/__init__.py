@@ -42,6 +42,7 @@ VERIFICATION_LABELS = {
     "boolean-differential": "Repeated boolean response differential",
     "error-indicator": "Database error string (indicator only)",
     "two-account-content-comparison": "Two-account protected-content comparison",
+    "static-pattern": "Static source pattern (not executed, no data-flow analysis)",
 }
 # Redacted URLs carry the mask percent-encoded.
 REDACTION = re.compile(re.escape(MASK) + "|" + re.escape(quote(MASK, safe="")))
@@ -66,7 +67,8 @@ def create_app(database_path) -> Flask:
     app.jinja_env.filters.update(
         as_text=as_text, redactions=highlight_redactions, timestamp=format_timestamp, short_id=short_id,
     )
-    app.jinja_env.globals.update(verification_label=VERIFICATION_LABELS.get)
+    app.jinja_env.globals.update(verification_label=VERIFICATION_LABELS.get,
+                                 can_render_access_comparison=can_render_access_comparison)
     app.context_processor(lambda: {"database_path": app.config["DATABASE_PATH"]})
     return app
 
@@ -142,3 +144,29 @@ def format_timestamp(value) -> str:
 
 def short_id(value) -> str:
     return str(value)[:8]
+
+
+def can_render_access_comparison(verification) -> bool:
+    """Only summarize complete typed IDOR evidence; preserve other facts as JSON.
+
+    In particular, null/missing assertions are unknown, not negative outcomes,
+    and strings or integers must never be interpreted through truthiness.
+    """
+    if not isinstance(verification, dict) or verification.get("method") != "two-account-content-comparison":
+        return False
+    if verification.get("expected_other") not in ("allow", "deny"):
+        return False
+    rounds = verification.get("rounds")
+    if not isinstance(rounds, list) or not rounds:
+        return False
+    for observation in rounds:
+        if not isinstance(observation, dict):
+            return False
+        for field in ("owner_matches", "other_identity_matches", "other_protected_matches"):
+            if type(observation.get(field)) is not bool:
+                return False
+        for field in ("owner_status", "other_status"):
+            status = observation.get(field)
+            if type(status) is not int or not 100 <= status <= 599:
+                return False
+    return True

@@ -16,6 +16,7 @@ class ScanConfig:
     max_endpoints: int = 40
     max_parameters: int = 8
     max_requests: int = 400
+    max_response_bytes: int = 1_000_000
     max_seconds: float = 180
     timeout: float = 5
     browser_wait_ms: int = 500
@@ -37,6 +38,7 @@ class ScanConfig:
             ("max_endpoints", 1, 200),
             ("max_parameters", 1, 30),
             ("max_requests", 1, 5000),
+            ("max_response_bytes", 1024, 20_000_000),
             ("max_seconds", 1, 3600),
             ("timeout", 0.1, 60),
             ("browser_wait_ms", 0, 10000),

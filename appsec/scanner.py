@@ -9,12 +9,20 @@ from .http import Budget, SafeSession
 
 def run_scan(config, repository):
     scope = config.validate()  # Fail closed before starting or issuing requests.
+    from .auth import register_auth_secrets
+
+    if config.auth:
+        register_auth_secrets(repository.redactor, config.auth)
+    if config.idor:
+        for account in config.idor["accounts"].values():
+            register_auth_secrets(repository.redactor, account)
     scan_id = repository.start_scan(config.target, "DAST")
     client = SafeSession(
         scope,
         timeout=config.timeout,
         budget=Budget(config.max_requests, config.max_seconds),
         redactor=repository.redactor,
+        max_bytes=config.max_response_bytes,
     )
     errors, limitations, successful = [], [], 0
     endpoints = {}
@@ -97,6 +105,8 @@ def run_scan(config, repository):
             limitations.append(
                 "No eligible inputs were tested; this is not evidence that the target is secure."
             )
+    except KeyboardInterrupt:
+        errors.append("Scan interrupted by operator.")
     except Exception as exc:
         errors.append(f"Scan failed: {type(exc).__name__}: {repository.redactor.text(str(exc))}")
     finally:

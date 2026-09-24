@@ -44,3 +44,9 @@ def test_budget():
     budget.take()
     with pytest.raises(RequestFailure):
         budget.take()
+
+
+def test_response_body_limit(lab, client):
+    client.max_bytes = 8
+    with pytest.raises(RequestFailure, match="body/time limit"):
+        client.request("GET", lab[0] + "/safe")

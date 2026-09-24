@@ -4,7 +4,10 @@ import re
 from urllib.parse import parse_qsl, quote, quote_plus, urlencode, urlsplit, urlunsplit
 
 MASK = "[REDACTED]"
-SECRET_KEY = re.compile(r"password|passwd|secret|token|authorization|cookie|api.?key|csrf|credential", re.I)
+SECRET_KEY = re.compile(
+    r"password|passwd|secret|token|authorization|cookie|session|api.?key|access.?key|csrf|credential|jwt|(?:^|[_-])auth(?:$|[_-])",
+    re.I,
+)
 
 
 class Redactor:
@@ -20,15 +23,18 @@ class Redactor:
     def text(self, value):
         value = str(value)
         for secret in sorted(self.secrets, key=len, reverse=True):
-            value = value.replace(secret, MASK)
+            if len(secret) < 4:
+                value = re.sub(r"(?<!\w)" + re.escape(secret) + r"(?!\w)", lambda _: MASK, value)
+            else:
+                value = value.replace(secret, MASK)
         value = re.sub(r"(?i)\bBearer\s+[^\s\"'<>]+", "Bearer " + MASK, value)
         value = re.sub(
-            r"""(?ix)(["']?(?:password|passwd|secret|[\w-]*token|api[_-]?key|authorization|cookie|set-cookie)["']?\s*[:=]\s*)(["'])(.*?)\2""",
+            r"""(?ix)(["']?(?:password|passwd|secret|[\w-]*token|session[\w-]*|api[_-]?key|authorization|cookie|set-cookie)["']?\s*[:=]\s*)(["'])(.*?)\2""",
             lambda m: m[1] + m[2] + MASK + m[2],
             value,
         )
         value = re.sub(
-            r"(?i)((?:password|passwd|secret|[\w-]*token|api[_-]?key)=)[^&\s<>\"']+",
+            r"(?i)((?:password|passwd|secret|[\w-]*token|session[\w-]*|auth|jwt|api[_-]?key)=)[^&\s<>\"']+",
             lambda m: m[1] + MASK,
             value,
         )
