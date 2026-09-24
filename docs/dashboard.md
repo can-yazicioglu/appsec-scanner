@@ -11,8 +11,6 @@ environment:
 
 ```bash
 appsec --db results/appsec.db dashboard --host 127.0.0.1 --port 5000
-# Equivalent standalone entry point:
-python -m appsec.dashboard --db results/appsec.db --port 5000
 ```
 
 Open <http://127.0.0.1:5000>. The factory is
@@ -86,12 +84,14 @@ around the redaction placeholder. Scanned URLs are displayed as text, never as
 links or embedded resources. The dashboard serves local CSS/JavaScript only,
 sets a restrictive Content Security Policy, disables caching, and downloads JSON
 as an attachment with `nosniff`. Core navigation, filters and export work without
-JavaScript; JavaScript only enhances copying a finding's JSON.
+JavaScript; JavaScript only adds a loading notice while filters reload and copying
+a finding's JSON. It never inserts HTML.
 
 Run the component checks:
 
 ```bash
 python -m pytest tests/test_exporter.py tests/test_dashboard.py tests/test_dashboard_security.py -q
+python -m pytest tests/test_dashboard_browser.py -q   # needs Playwright Chromium (browser marker)
 ```
 
 Fixtures in `tests/dashboard_data.py` are explicitly labelled synthetic records,
@@ -104,6 +104,9 @@ write routes.
 Visual QA used local Chromium at 1440×1100 and 390×844 for history, scan and
 finding views. It verified a filter interaction and export-link selection,
 without script errors, injected dialogs or document-wide horizontal overflow.
-Wide findings tables scroll within their panels on small screens. The dashboard
+`tests/test_dashboard_browser.py` repeats this in Chromium at 1280 and 390 px:
+stored payloads never open a dialog or raise a page error, the browser requests
+nothing outside the dashboard, and on narrow screens each row stacks so severity,
+confidence and scan status stay beside the title rather than scrolling off-screen. The dashboard
 loads all findings for a selected scan, so it is intended for bounded local
 scans rather than very large multi-user deployments.

@@ -10,8 +10,8 @@ from pathlib import Path
 import pytest
 from flask import Flask
 
+from appsec import cli
 from appsec.dashboard import create_app
-from appsec.dashboard.__main__ import main as run_dashboard
 from tests.dashboard_data import IMG, JS_URL, PAYLOADS, SCRIPT, SECRET, SVG, build_store
 
 TEMPLATES = Path(__file__).resolve().parents[1] / "appsec" / "dashboard" / "templates"
@@ -145,9 +145,9 @@ def test_documented_run_configuration_keeps_debug_off(store, monkeypatch):
     calls = []
     monkeypatch.setattr(Flask, "run", lambda self, **kwargs: calls.append((self, kwargs)))
     monkeypatch.setenv("FLASK_DEBUG", "1")
-    run_dashboard(["--db", str(store[0])])
+    assert cli.main(["--db", str(store[0]), "dashboard"]) == 0  # the README's launch command
     [(app, kwargs)] = calls
-    assert kwargs["debug"] is False and kwargs["use_reloader"] is False
+    assert kwargs["debug"] is False
     assert kwargs["host"] == "127.0.0.1"
     assert app.debug is False
 

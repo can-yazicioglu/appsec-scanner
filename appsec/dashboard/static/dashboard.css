@@ -232,3 +232,14 @@ footer{align-items:flex-start;flex-direction:column;gap:8px;font-size:9px}
 .prose,.steps,.observations{font-size:12px}
 }
 
+
+/* Narrow screens: stack rows so scan status, severity and confidence stay beside
+   the title instead of scrolling off-screen (a suspected High must never read as verified). */
+@media(max-width:720px){.results-table,.scan-table{min-width:0}
+.results-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.results-table tbody tr{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:16px 18px;border-bottom:1px solid #213044}
+.results-table tbody tr:last-child{border-bottom:0}
+.results-table td,.results-table td:first-child,.results-table td:last-child{display:block;padding:0;border:0}
+.results-table td:first-child{flex:1 0 100%}
+.results-table td:last-child{display:none}
+}
