@@ -90,7 +90,8 @@ a finding's JSON. It never inserts HTML.
 Run the component checks:
 
 ```bash
-python -m pytest tests/test_exporter.py tests/test_dashboard.py tests/test_dashboard_security.py -q
+python -m pytest tests/test_exporter.py tests/test_dashboard.py tests/test_dashboard_security.py \
+  tests/test_dashboard_sast.py -q
 python -m pytest tests/test_dashboard_browser.py -q   # needs Playwright Chromium (browser marker)
 ```
 
@@ -99,7 +100,10 @@ not results attributed to Juice Shop or DVWA. They exercise persisted DAST/SAST
 records, malicious evidence, all scan states and unavailable fields. Tests cover
 filter/export consistency, persistence across restarts, read-only access,
 invalid identifiers, redaction, escaped payloads, safe headers and absence of
-write routes.
+write routes. Two tests render actual scanner output instead of fixtures: the
+IDOR check run against the controlled lab (expected versus observed access) and
+`appsec source-scan tests/fixtures/source` (file/line locations, manual review,
+masked literals, and a download identical to the CLI export).
 
 Visual QA used local Chromium at 1440×1100 and 390×844 for history, scan and
 finding views. It verified a filter interaction and export-link selection,
