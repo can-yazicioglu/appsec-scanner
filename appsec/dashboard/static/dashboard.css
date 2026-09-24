@@ -137,6 +137,8 @@ footer code{color:#8da3b9}
 .facts th{text-align:left;font-weight:500;color:var(--muted);width:28%;vertical-align:top;padding:10px 15px 10px 0}
 .facts td{padding:7px 0;overflow-wrap:anywhere}
 .facts .evidence{font-size:10px}
+.access-comparison thead th{font-size:10px;text-transform:uppercase;letter-spacing:.6px;padding:6px 15px 6px 0}
+.access-comparison td{padding-right:12px}
 .evidence-section{border-top:1px solid var(--line);margin-top:20px;padding-top:17px}
 .evidence-section summary{cursor:pointer;font-size:13px;font-weight:600;margin-bottom:14px}
 .evidence-section summary .subtle{font-weight:400;font-size:10px;margin-left:8px}

@@ -72,17 +72,23 @@ def build_store(path):
             reproduction_steps=["Log out.", "Replay the recorded request."],
             evidence={"observations": ["Replay returned 200."], "verification": {"method": "session-replay"}}))
         ids["idor"] = repo.add_finding(dast, finding(
-            "dast.idor", "[FIXTURE] Basket readable by another account", _dast("/rest/basket/2", None, "path"),
+            # Evidence shape mirrors appsec/checks/idor.py output persisted from the controlled lab.
+            "dast.idor.read", "[FIXTURE] Basket readable by another account", _dast("/rest/basket/2", None, None),
             severity="high", confidence="confirmed", category="A01:2021", name="Broken Access Control",
-            description="Account B read account A's basket.", remediation="Enforce object ownership checks.",
-            reproduction_steps=["Authenticate as account B.", "Request account A's basket ID."],
-            evidence={"request": {"method": "GET", "account": "fixture-account-b",
+            description="The separately verified non-owner retrieved protected content.",
+            remediation="Enforce object ownership checks.",
+            reproduction_steps=["Authenticate as the owner account.", "Request the same basket as the other account."],
+            evidence={"request": {"method": "GET", "url": "http://localhost:3000/rest/basket/2",
                                   "headers": {"Cookie": f"token={SECRET}"}},
-                      "response": {"status": 200, "excerpt": "basket owner: fixture-account-a"},
-                      "observations": ["Owner and requester are different fixture accounts."],
-                      "verification": {"method": "two-account-access",
-                                       "expected": "403 or 404 for fixture-account-b",
-                                       "observed": "200 with fixture-account-a basket contents"}}))
+                      "response": {"status": 200},
+                      "observations": ["Expected owner: allowed; expected non-owner: denied."],
+                      "verification": {"method": "two-account-content-comparison", "expected_other": "deny",
+                                       "identity_fields": ["id", "owner"], "protected_fields": ["items"],
+                                       "rounds": [{"owner_status": 200, "owner_matches": True, "other_status": 200,
+                                                   "other_identity_matches": True, "other_protected_matches": True},
+                                                  {"owner_status": 200, "owner_matches": True, "other_status": 403,
+                                                   "other_identity_matches": False,
+                                                   "other_protected_matches": False}]}}))
         ids["js_url"] = repo.add_finding(dast, finding(
             "dast.xss.reflected", "[FIXTURE] Scheme-confusion location", location(
                 "DAST", url=JS_URL + "localhost:3000/", method="GET", parameter="next", input_location="query"),

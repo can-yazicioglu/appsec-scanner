@@ -41,6 +41,7 @@ VERIFICATION_LABELS = {
     "reflection": "Payload reflection (indicator only)",
     "boolean-differential": "Repeated boolean response differential",
     "error-indicator": "Database error string (indicator only)",
+    "two-account-content-comparison": "Two-account protected-content comparison",
 }
 # Redacted URLs carry the mask percent-encoded.
 REDACTION = re.compile(re.escape(MASK) + "|" + re.escape(quote(MASK, safe="")))

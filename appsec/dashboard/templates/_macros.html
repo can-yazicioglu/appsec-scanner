@@ -80,3 +80,22 @@
     </tbody>
   </table>
 {%- endmacro %}
+
+{% macro access_comparison(verification) -%}
+  {#- Two-account checks record each round's outcome. Show them beside the recorded
+      expectation verbatim; this displays facts and never reclassifies the finding. -#}
+  <h3>Expected vs observed access</h3>
+  <table class="facts access-comparison">
+    <thead><tr><th scope="col"><span class="sr-only">Attempt</span></th><th scope="col">Owner account</th><th scope="col">Other account</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Expected</th><td>Allowed</td><td>{{ {"deny": "Denied", "allow": "Allowed"}.get(verification.expected_other, verification.expected_other) }}</td></tr>
+      {%- for round in verification.rounds %}
+      <tr>
+        <th scope="row">Observed, round {{ loop.index }}</th>
+        <td>HTTP {{ round.owner_status }} · baseline assertions {{ "met" if round.owner_matches else "not met" }}</td>
+        <td>HTTP {{ round.other_status }} · identity {{ "matched" if round.other_identity_matches else "not matched" }} · protected content {{ "returned" if round.other_protected_matches else "not returned" }}</td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+{%- endmacro %}

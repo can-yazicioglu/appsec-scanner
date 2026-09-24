@@ -141,8 +141,15 @@ def test_browser_check_label_does_not_claim_execution(client, store):
 
 def test_idor_detail_shows_expected_and_observed_access_with_redacted_credentials(client, store):
     html = page(client, f"/findings/{store[1]['idor']}")
-    assert "403 or 404 for fixture-account-b" in html
-    assert "200 with fixture-account-a basket contents" in html
+    assert "Two-account protected-content comparison" in html and "Expected vs observed access" in html
+    rows = [re.sub(r"<[^>]+>|\s+", " ", row).split() for row in re.findall(r"<tr>(.*?)</tr>", html, re.S)
+            if "Expected<" in row or "Observed, round" in row]
+    assert [" ".join(r) for r in rows] == [
+        "Expected Allowed Denied",
+        "Observed, round 1 HTTP 200 · baseline assertions met HTTP 200 · identity matched · protected content returned",
+        "Observed, round 2 HTTP 200 · baseline assertions met "
+        "HTTP 403 · identity not matched · protected content not returned",
+    ]
     assert '<mark class="redacted">[REDACTED]</mark>' in html
     assert '<span class="kind">GET</span> <code class="url">http://localhost:3000/rest/basket/2</code>' in html
 
@@ -249,3 +256,18 @@ def test_dashboard_works_against_a_write_protected_store(store):
     finally:
         os.chmod(path.parent, 0o755)
         os.chmod(path, 0o644)
+
+
+def test_real_idor_scan_output_shows_expected_versus_observed_access(lab, tmp_path):
+    """Presentation against CX's actual IDOR check persisted from the controlled lab."""
+    from appsec.scanner import run_scan
+    from tests.test_idor import idor_config
+
+    path = tmp_path / "idor.db"
+    with Repository(path) as repo:
+        scan_id = run_scan(idor_config(lab[0]), repo)
+        [record] = repo.list_findings(scan_id)
+    html = page(create_app(path).test_client(), f"/findings/{record['id']}")
+    assert "Expected vs observed access" in html and "Two-account protected-content comparison" in html
+    assert html.count("HTTP 200 · identity matched · protected content returned") == 2
+    assert "fixture-private" not in html
